@@ -1,0 +1,7 @@
+{
+  "title": "DevOpsPilot AI Dashboard",
+  "panels": [
+    {"title": "CPU Usage", "type": "graph", "targets": [{"expr": "node_cpu_seconds_total"}]},
+    {"title": "Memory Usage", "type": "graph", "targets": [{"expr": "node_memory_MemTotal_bytes - node_memory_MemFree_bytes"}]}
+  ]
+}

@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DevOpsPilot AI | The Invisible Architect</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&amp;family=JetBrains+Mono:wght@400;500&amp;family=Geist:wght@100;300;400;600;700&amp;display=swap" rel="stylesheet"/>
+<style>
+        :root {
+            --electric-amethyst: #571bc1;
+            --hyper-blue: #00dbe7;
+            --neon-cyan: #00ffaa;
+            --deep-space: #0f131e;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
+        }
+        .cipher-card {
+            background: rgba(15, 19, 30, 0.6);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(0, 255, 170, 0.1);
+            box-shadow: inset 0 0 20px rgba(0, 255, 170, 0.02);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 0.3s ease;
+            perspective: 1000px;
+        }
+        .cipher-card:hover {
+            transform: translateY(-5px) rotateX(2deg) rotateY(2deg);
+            border-color: var(--neon-cyan);
+            background: rgba(27, 31, 43, 0.8);
+        }
+        .cipher-border {
+            border: 1px solid rgba(0, 255, 170, 0.15);
+        }
+        .electric-glow {
+            box-shadow: 0 0 30px rgba(0, 255, 170, 0.15);
+        }
+        .hero-mesh {
+            background-color: #0a0e19;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(87, 27, 193, 0.15) 0, transparent 50%), 
+                radial-gradient(at 50% 0%, rgba(0, 219, 231, 0.1) 0, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(0, 255, 170, 0.1) 0, transparent 50%);
+        }
+        .bg-grid-tight {
+            background-image: linear-gradient(to right, rgba(0, 255, 170, 0.03) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(0, 255, 170, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+        .scanline::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to bottom, transparent, rgba(0, 255, 170, 0.05), transparent);
+            animation: scanline 8s linear infinite;
+        }
+        .mask-radial {
+            mask-image: radial-gradient(circle at center, black 40%, transparent 80%);
+        }
+        #three-canvas {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 0;
+            pointer-events: none;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "primary": "#00FFAA",
+                      "primary-dim": "rgba(0, 255, 170, 0.6)",
+                      "secondary": "#00DBE7",
+                      "accent-purple": "#571bc1",
+                      "background": "#0A0E19",
+                      "surface": "#0F131E",
+                      "surface-bright": "#1B1F2B",
+                      "on-surface": "#DFE2F2",
+                      "on-surface-variant": "#849495",
+                      "outline-variant": "rgba(0, 255, 170, 0.1)"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem"
+              },
+              "spacing": {
+                      "base": "8px",
+                      "container-padding": "40px",
+                      "gutter": "24px",
+                      "section-gap": "96px"
+              },
+              "fontFamily": {
+                      "headline": ["Geist", "sans-serif"],
+                      "mono": ["JetBrains Mono", "monospace"],
+                      "body": ["Inter", "sans-serif"]
+              }
+            },
+          },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface selection:bg-primary/30 selection:text-primary overflow-x-hidden font-body">
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 left-0 w-full flex justify-between items-center px-container-padding py-4 bg-background/40 backdrop-blur-2xl border-b border-primary/10 z-50">
+<div class="flex items-center gap-10">
+<span class="font-headline text-xl font-bold tracking-tighter text-primary flex items-center gap-2">
+<span class="w-2 h-2 bg-primary rounded-full animate-pulse shadow-[0_0_8px_rgba(0,255,170,1)]"></span>
+                DevOpsPilot AI
+            </span>
+<nav class="hidden md:flex gap-8">
+<a class="font-mono text-xs uppercase tracking-widest text-primary border-b border-primary/50" href="#">Product</a>
+<a class="font-mono text-xs uppercase tracking-widest text-on-surface-variant hover:text-primary transition-colors" href="#">Solutions</a>
+<a class="font-mono text-xs uppercase tracking-widest text-on-surface-variant hover:text-primary transition-colors" href="#">Pricing</a>
+<a class="font-mono text-xs uppercase tracking-widest text-on-surface-variant hover:text-primary transition-colors" href="#">Docs</a>
+</nav>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex gap-4">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors text-xl">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors text-xl">terminal</button>
+</div>
+<button class="hidden lg:block font-mono text-xs uppercase tracking-widest text-on-surface hover:text-primary transition-colors">Sign In</button>
+<button class="px-5 py-2 bg-primary text-background font-mono text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-white transition-all shadow-[0_0_15px_rgba(0,255,170,0.3)]">Launch App</button>
+</div>
+</header>
+<main>
+<!-- Hero Section: Command Center -->
+<section class="relative min-h-screen flex flex-col items-center justify-center pt-24 px-container-padding hero-mesh bg-grid-tight overflow-hidden">
+<canvas id="three-canvas"></canvas>
+<div class="absolute inset-0 opacity-20 mask-radial scanline"></div>
+<div class="relative z-10 w-full max-w-6xl mx-auto flex flex-col items-center">
+<div class="inline-flex items-center px-3 py-1 mb-8 cipher-border bg-primary/5 text-primary font-mono text-[10px] uppercase tracking-[0.3em] backdrop-blur-md">
+<span class="mr-2 inline-block w-1.5 h-1.5 bg-primary animate-ping"></span>
+                    System Status: Neural Orchestration Active
+                </div>
+<h1 class="font-headline text-5xl md:text-7xl font-light text-white text-center leading-[1.1] tracking-tighter max-w-4xl mb-6 drop-shadow-2xl">
+                    The Invisible <span class="font-bold text-primary drop-shadow-[0_0_15px_rgba(0,255,170,0.4)]">Architect</span> of your Infrastructure.
+                </h1>
+<p class="font-body text-lg text-on-surface-variant text-center max-w-2xl mb-12 font-light">
+                    Autonomous orchestration for the next generation of software. Secure, scale, and optimize with agentic AI precision.
+                </p>
+<div class="flex flex-wrap justify-center gap-6 mb-16">
+<button class="px-8 py-4 bg-transparent border border-primary/40 text-primary font-mono text-xs uppercase tracking-[0.2em] hover:bg-primary/10 hover:border-primary transition-all electric-glow backdrop-blur-sm">
+                        Start Deploying
+                    </button>
+<button class="px-8 py-4 bg-white/5 border border-white/10 text-white font-mono text-xs uppercase tracking-[0.2em] hover:bg-white/10 transition-all backdrop-blur-sm">
+                        Live Dashboard
+                    </button>
+</div>
+<!-- Modern Visual Placeholder for 3D overlap -->
+<div class="w-full max-w-5xl h-[320px] pointer-events-none opacity-0"></div>
+</div>
+</section>
+<!-- Features Section: High-Density Bento -->
+<section class="py-section-gap px-container-padding max-w-7xl mx-auto">
+<div class="text-center mb-20">
+<h2 class="font-headline text-3xl font-light text-white mb-4 tracking-tight">Technical <span class="text-primary font-bold">Excellence</span></h2>
+<div class="h-px w-20 bg-gradient-to-r from-transparent via-primary/40 to-transparent mx-auto"></div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+<!-- Feature 1 -->
+<div class="md:col-span-8 cipher-card p-8 group transition-all">
+<div class="flex justify-between items-start mb-6">
+<div>
+<span class="font-mono text-[10px] text-primary uppercase tracking-[0.2em] mb-2 block">System Optimization</span>
+<h3 class="font-headline text-2xl font-light text-white">Predictive Auto-scaling</h3>
+</div>
+<span class="material-symbols-outlined text-primary text-3xl group-hover:scale-110 transition-transform">query_stats</span>
+</div>
+<p class="font-body text-on-surface-variant font-light mb-8 max-w-md">Our neural engine anticipates traffic spikes 15 minutes before they happen, scaling clusters across multi-cloud regions with zero latency.</p>
+<div class="h-24 flex items-end gap-1.5 px-4 py-2 bg-black/40 border border-primary/10 rounded-lg overflow-hidden">
+<div class="flex-grow bg-primary/10 h-[30%]"></div>
+<div class="flex-grow bg-secondary/10 h-[45%]"></div>
+<div class="flex-grow bg-accent-purple/10 h-[70%]"></div>
+<div class="flex-grow bg-primary/60 h-[90%] shadow-[0_0_15px_rgba(0,255,170,0.3)]"></div>
+<div class="flex-grow bg-secondary/20 h-[50%]"></div>
+<div class="flex-grow bg-accent-purple/20 h-[40%]"></div>
+<div class="flex-grow bg-primary/40 h-[65%] shadow-[0_0_10px_rgba(0,255,170,0.2)]"></div>
+</div>
+</div>
+<!-- Feature 2 -->
+<div class="md:col-span-4 cipher-card p-8 group transition-all flex flex-col justify-between">
+<div>
+<span class="font-mono text-[10px] text-secondary uppercase tracking-[0.2em] mb-2 block">Security Protocol</span>
+<h3 class="font-headline text-2xl font-light text-white mb-4">Zero-Trust AI</h3>
+</div>
+<div class="relative py-8 flex justify-center">
+<div class="w-32 h-32 rounded-full border border-secondary/20 flex items-center justify-center">
+<div class="w-24 h-24 rounded-full border border-secondary/40 flex items-center justify-center animate-[spin_10s_linear_infinite]">
+<div class="absolute top-0 w-2 h-2 bg-secondary rounded-full shadow-[0_0_15px_#00DBE7]"></div>
+</div>
+<span class="material-symbols-outlined text-secondary text-4xl absolute group-hover:scale-125 transition-transform">lock_open</span>
+</div>
+<div class="absolute inset-0 bg-secondary/5 blur-3xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+</div>
+<p class="font-body text-xs text-on-surface-variant font-light mt-4">Real-time threat detection that isolates compromised nodes instantly.</p>
+</div>
+<!-- Feature 3 -->
+<div class="md:col-span-12 cipher-card p-8 grid md:grid-cols-2 gap-12 group transition-all">
+<div>
+<span class="font-mono text-[10px] text-accent-purple uppercase tracking-[0.2em] mb-2 block">Developer Experience</span>
+<h3 class="font-headline text-3xl font-light text-white mb-4">Contextual AI Debugging</h3>
+<p class="font-body text-on-surface-variant font-light mb-8">Stop scrolling through endless logs. DevOpsPilot identifies root causes, links them to specific PRs, and applies the fix for you.</p>
+<ul class="space-y-4 font-mono text-[10px] text-primary/80">
+<li class="flex items-center gap-3">
+<span class="w-1 h-1 bg-primary"></span> LOG ANOMALY DETECTION (ACTIVE)
+                            </li>
+<li class="flex items-center gap-3">
+<span class="w-1 h-1 bg-accent-purple"></span> AUTO-ROLLBACK (ENABLED)
+                            </li>
+</ul>
+</div>
+<div class="bg-[#05070a] border border-white/5 p-5 font-mono text-[11px] leading-relaxed relative overflow-hidden rounded-lg">
+<div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-accent-purple/40 to-transparent"></div>
+<div class="text-white/40 mb-2">// Analyzing pod/api-gateway-v2...</div>
+<div class="text-primary font-bold">$ devops-pilot analyze --verbose</div>
+<div class="mt-2 text-on-surface">Scanning memory patterns...</div>
+<div class="text-red-400 mt-1">[!] MEMORY_LEAK detected in auth-svc.container</div>
+<div class="text-secondary mt-1">&gt; FIX: Increasing thread pool limit to 200 via Patch #821</div>
+<div class="mt-4 inline-block px-3 py-1 bg-accent-purple/10 border border-accent-purple/20 text-accent-purple font-bold">Applying Hotfix... [DONE]</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Pricing Section -->
+<section class="py-section-gap px-container-padding bg-[#070a13] relative border-y border-primary/5">
+<div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(87,27,193,0.05),transparent_70%)]"></div>
+<div class="max-w-7xl mx-auto relative z-10">
+<div class="text-center mb-16">
+<h2 class="font-headline text-3xl font-light text-white mb-2">Predictable <span class="text-secondary font-bold">Pricing</span></h2>
+<p class="font-mono text-[10px] uppercase tracking-[0.2em] text-on-surface-variant">Choose your orchestration scale</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<!-- Pro -->
+<div class="cipher-card p-10 flex flex-col hover:-translate-y-1 transition-all">
+<div class="font-mono text-[10px] text-primary uppercase tracking-[0.3em] mb-6">Level 01: Pro</div>
+<div class="flex items-baseline gap-2 mb-8">
+<span class="font-headline text-5xl font-light text-white">$49</span>
+<span class="font-mono text-[10px] text-on-surface-variant uppercase">/ Monthly</span>
+</div>
+<ul class="space-y-4 mb-12 flex-grow font-body text-sm font-light text-on-surface-variant">
+<li class="flex items-center gap-3"><span class="material-symbols-outlined text-primary text-sm">check</span> Up to 10 Nodes</li>
+<li class="flex items-center gap-3"><span class="material-symbols-outlined text-primary text-sm">check</span> AI Log Analysis</li>
+<li class="flex items-center gap-3 opacity-30"><span class="material-symbols-outlined text-sm">close</span> Priority Support</li>
+</ul>
+<button class="w-full py-4 border border-white/10 font-mono text-[10px] uppercase tracking-[0.2em] hover:bg-white/5 transition-colors">Select Tier</button>
+</div>
+<!-- Business -->
+<div class="cipher-card p-10 flex flex-col relative border-primary/40 scale-105 shadow-[0_0_40px_rgba(0,255,170,0.05)] bg-[#131722]">
+<div class="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-primary text-background font-mono text-[8px] font-bold uppercase tracking-widest shadow-[0_0_15px_rgba(0,255,170,0.5)]">Recommended</div>
+<div class="font-mono text-[10px] text-primary uppercase tracking-[0.3em] mb-6">Level 02: Business</div>
+<div class="flex items-baseline gap-2 mb-8">
+<span class="font-headline text-5xl font-light text-white">$199</span>
+<span class="font-mono text-[10px] text-on-surface-variant uppercase">/ Monthly</span>
+</div>
+<ul class="space-y-4 mb-12 flex-grow font-body text-sm font-light text-white/90">
+<li class="flex items-center gap-3"><span class="material-symbols-outlined text-primary text-sm">check</span> Unlimited Nodes</li>
+<li class="flex items-center gap-3"><span class="material-symbols-outlined text-primary text-sm">check</span> Predictive Scaling</li>
+<li class="flex items-center gap-3"><span class="material-symbols-outlined text-primary text-sm">check</span> 24/7 Priority Support</li>
+</ul>
+<button class="w-full py-4 bg-primary text-background font-mono text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-white transition-all shadow-[0_0_20px_rgba(0,255,170,0.3)]">Upgrade System</button>
+</div>
+<!-- Enterprise -->
+<div class="cipher-card p-10 flex flex-col hover:-translate-y-1 transition-all">
+<div class="font-mono text-[10px] text-accent-purple uppercase tracking-[0.3em] mb-6">Level 03: Enterprise</div>
+<div class="flex items-baseline gap-2 mb-8">
+<span class="font-headline text-5xl font-light text-white">Custom</span>
+</div>
+<ul class="space-y-4 mb-12 flex-grow font-body text-sm font-light text-on-surface-variant">
+<li class="flex items-center gap-3"><span class="material-symbols-outlined text-accent-purple text-sm">check</span> Dedicated Clusters</li>
+<li class="flex items-center gap-3"><span class="material-symbols-outlined text-accent-purple text-sm">check</span> On-Premise Models</li>
+<li class="flex items-center gap-3"><span class="material-symbols-outlined text-accent-purple text-sm">check</span> Architect Consultation</li>
+</ul>
+<button class="w-full py-4 border border-accent-purple/20 text-accent-purple font-mono text-[10px] uppercase tracking-[0.2em] hover:bg-accent-purple/5 transition-colors">Contact Sales</button>
+</div>
+</div>
+</div>
+</section>
+<!-- CTA Section -->
+<section class="py-section-gap px-container-padding text-center relative overflow-hidden">
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-accent-purple/10 blur-[120px] rounded-full pointer-events-none"></div>
+<div class="max-w-4xl mx-auto cipher-card p-16 relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-br from-accent-purple/5 to-transparent pointer-events-none"></div>
+<h2 class="font-headline text-4xl font-light text-white mb-6">Ready to make your infrastructure <span class="italic text-primary/80">invisible</span>?</h2>
+<p class="font-body text-lg text-on-surface-variant font-light mb-12">Join the elite engineering teams orchestrating the future.</p>
+<div class="flex flex-col sm:flex-row justify-center gap-4 max-w-lg mx-auto">
+<input class="flex-grow px-6 py-4 bg-black/40 border border-white/10 text-white font-mono text-xs focus:ring-1 focus:ring-primary outline-none transition-all rounded-sm" placeholder="USER@ORG_DOMAIN.IO" type="email"/>
+<button class="px-8 py-4 bg-primary text-background font-mono text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-white transition-all shadow-[0_0_20px_rgba(0,255,170,0.2)]">Start Trial</button>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="w-full py-16 px-container-padding bg-background border-t border-primary/10">
+<div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-12">
+<div class="space-y-4">
+<span class="font-headline text-xl font-bold tracking-tighter text-primary">DevOpsPilot AI</span>
+<p class="font-mono text-[10px] uppercase tracking-widest text-on-surface-variant">The Invisible Architect © 2024</p>
+</div>
+<div class="flex flex-wrap gap-x-12 gap-y-6 font-mono text-[10px] uppercase tracking-[0.2em] text-on-surface-variant">
+<a class="hover:text-primary transition-colors" href="#">Privacy</a>
+<a class="hover:text-primary transition-colors" href="#">Terms</a>
+<a class="hover:text-primary transition-colors" href="#">Security</a>
+<a class="flex items-center gap-2 text-primary" href="#">
+<span class="w-1.5 h-1.5 bg-primary rounded-full animate-pulse shadow-[0_0_5px_rgba(0,255,170,1)]"></span> SYSTEM_ONLINE
+                </a>
+</div>
+<div class="flex gap-4">
+<button class="w-10 h-10 flex items-center justify-center border border-white/10 hover:border-primary/50 text-on-surface-variant hover:text-primary transition-all rounded-sm">
+<svg class="w-4 h-4 fill-current" viewbox="0 0 24 24"><path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"></path></svg>
+</button>
+<button class="w-10 h-10 flex items-center justify-center border border-white/10 hover:border-primary/50 text-on-surface-variant hover:text-primary transition-all rounded-sm">
+<svg class="w-4 h-4 fill-current" viewbox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.041-1.416-4.041-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"></path></svg>
+</button>
+</div>
+</div>
+</footer>
+<script>
+        // Three.js Integration
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('three-canvas'), alpha: true, antialias: true });
+        
+        const updateRendererSize = () => {
+            const width = window.innerWidth;
+            const height = 800; // Constrain to hero area
+            renderer.setSize(width, height);
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+        };
+
+        updateRendererSize();
+        window.addEventListener('resize', updateRendererSize);
+
+        // Dynamic Crystalline Orb
+        const geometry = new THREE.IcosahedronGeometry(2, 1);
+        const wireframe = new THREE.WireframeGeometry(geometry);
+        const material = new THREE.LineBasicMaterial({ 
+            color: 0x00ffaa, 
+            transparent: true, 
+            opacity: 0.4,
+            linewidth: 2
+        });
+        const orb = new THREE.LineSegments(wireframe, material);
+        scene.add(orb);
+
+        // Inner glowing core
+        const coreGeom = new THREE.IcosahedronGeometry(0.8, 2);
+        const coreMat = new THREE.MeshBasicMaterial({ 
+            color: 0x571bc1, 
+            transparent: true, 
+            opacity: 0.6 
+        });
+        const core = new THREE.Mesh(coreGeom, coreMat);
+        scene.add(core);
+
+        // Floating particle network
+        const particlesCount = 200;
+        const positions = new Float32Array(particlesCount * 3);
+        for(let i=0; i<particlesCount * 3; i++) {
+            positions[i] = (Math.random() - 0.5) * 15;
+        }
+        const particlesGeom = new THREE.BufferGeometry();
+        particlesGeom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const particlesMat = new THREE.PointsMaterial({ color: 0x00dbe7, size: 0.05, transparent: true, opacity: 0.8 });
+        const points = new THREE.Points(particlesGeom, particlesMat);
+        scene.add(points);
+
+        camera.position.z = 6;
+
+        const animate = () => {
+            requestAnimationFrame(animate);
+            
+            orb.rotation.y += 0.003;
+            orb.rotation.x += 0.001;
+            
+            core.rotation.y -= 0.005;
+            core.scale.setScalar(1 + Math.sin(Date.now() * 0.002) * 0.1);
+            
+            points.rotation.y += 0.001;
+            
+            // Interaction: slight mouse follow
+            const targetX = (mouseX - window.innerWidth / 2) * 0.0001;
+            const targetY = (mouseY - window.innerHeight / 2) * 0.0001;
+            scene.rotation.y += (targetX - scene.rotation.y) * 0.05;
+            scene.rotation.x += (targetY - scene.rotation.x) * 0.05;
+
+            renderer.render(scene, camera);
+        };
+
+        let mouseX = 0, mouseY = 0;
+        window.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+
+        animate();
+
+        // Intersection Observer for scroll reveal effect
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('opacity-100', 'translate-y-0');
+                    entry.target.classList.remove('opacity-0', 'translate-y-8');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.cipher-card').forEach(card => {
+            card.classList.add('transition-all', 'duration-1000', 'opacity-0', 'translate-y-8');
+            observer.observe(card);
+        });
+    </script>
+</body></html>

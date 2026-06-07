@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AI Assistant | DevOpsPilot AI</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=Geist:wght@400;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed": "#001a42",
+                        "on-tertiary": "#002e6a",
+                        "primary-fixed": "#74f5ff",
+                        "inverse-on-surface": "#2c303c",
+                        "on-primary-fixed": "#002022",
+                        "on-error": "#690005",
+                        "on-error-container": "#ffdad6",
+                        "on-secondary-fixed": "#23005c",
+                        "surface-dim": "#0f131e",
+                        "on-tertiary-fixed-variant": "#004395",
+                        "surface": "#0f131e",
+                        "background": "#0f131e",
+                        "surface-container-highest": "#313441",
+                        "on-primary": "#00363a",
+                        "on-primary-container": "#006a71",
+                        "secondary-container": "#571bc1",
+                        "on-surface": "#dfe2f2",
+                        "tertiary-fixed-dim": "#adc6ff",
+                        "on-secondary-fixed-variant": "#5516be",
+                        "outline": "#849495",
+                        "on-tertiary-container": "#005cc5",
+                        "on-secondary-container": "#c4abff",
+                        "surface-container": "#1b1f2b",
+                        "tertiary-fixed": "#d8e2ff",
+                        "on-primary-fixed-variant": "#004f54",
+                        "surface-container-lowest": "#0a0e19",
+                        "primary-container": "#00f2ff",
+                        "surface-container-low": "#171b27",
+                        "tertiary-container": "#cddbff",
+                        "surface-variant": "#313441",
+                        "error-container": "#93000a",
+                        "surface-container-high": "#262a36",
+                        "surface-tint": "#00dbe7",
+                        "on-secondary": "#3c0091",
+                        "secondary-fixed-dim": "#d0bcff",
+                        "tertiary": "#f7f7ff",
+                        "secondary": "#d0bcff",
+                        "on-background": "#dfe2f2",
+                        "error": "#ffb4ab",
+                        "secondary-fixed": "#e9ddff",
+                        "on-surface-variant": "#b9cacb",
+                        "inverse-surface": "#dfe2f2",
+                        "primary-fixed-dim": "#00dbe7",
+                        "inverse-primary": "#00696f",
+                        "primary": "#e1fdff",
+                        "outline-variant": "#3a494b",
+                        "surface-bright": "#353945"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "base": "8px",
+                        "container-padding": "32px",
+                        "gutter": "24px",
+                        "section-gap": "64px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Geist"],
+                        "code-snippet": ["JetBrains Mono"],
+                        "headline-sm": ["Geist"],
+                        "headline-md": ["Geist"],
+                        "body-sm": ["Inter"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "label-caps": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "code-snippet": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "headline-sm": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "headline-md": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .neon-glow-primary {
+            box-shadow: 0 0 20px rgba(0, 219, 231, 0.15);
+        }
+        .neon-glow-hover:hover {
+            box-shadow: 0 0 25px rgba(0, 219, 231, 0.3);
+        }
+        .terminal-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 18px;
+            background: #00dbe7;
+            animation: blink 1s step-end infinite;
+            vertical-align: middle;
+            margin-left: 4px;
+        }
+        @keyframes blink {
+            from, to { opacity: 1; }
+            50% { opacity: 0; }
+        }
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body-md selection:bg-primary-fixed/30 selection:text-primary-fixed overflow-hidden">
+<!-- SideNavBar Shell -->
+<aside class="fixed left-0 top-0 h-full flex flex-col py-8 bg-surface-container-low/40 dark:bg-surface-container-low/40 backdrop-blur-2xl border-r border-outline-variant/10 w-[280px] z-50">
+<div class="px-6 mb-10 flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-gradient-to-br from-secondary-container to-primary-container flex items-center justify-center neon-glow-primary">
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">psychology</span>
+</div>
+<div>
+<h1 class="font-headline-sm text-headline-sm font-bold text-primary leading-tight">DevOpsPilot AI</h1>
+<p class="text-[10px] font-label-caps uppercase tracking-widest text-on-surface-variant/70">Enterprise Tier</p>
+</div>
+</div>
+<nav class="flex-1 px-4 space-y-2 overflow-y-auto">
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant/70 hover:bg-white/5 hover:text-primary transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-caps text-label-caps uppercase tracking-widest">Overview</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant/70 hover:bg-white/5 hover:text-primary transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined">account_tree</span>
+<span class="font-label-caps text-label-caps uppercase tracking-widest">Projects</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant/70 hover:bg-white/5 hover:text-primary transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined">rocket_launch</span>
+<span class="font-label-caps text-label-caps uppercase tracking-widest">Deployments</span>
+</a>
+<!-- Active Tab: AI Assistant -->
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl bg-secondary-container/30 text-secondary border-r-4 border-secondary transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">psychology</span>
+<span class="font-label-caps text-label-caps uppercase tracking-widest">AI Assistant</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant/70 hover:bg-white/5 hover:text-primary transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined">monitoring</span>
+<span class="font-label-caps text-label-caps uppercase tracking-widest">Monitoring</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant/70 hover:bg-white/5 hover:text-primary transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined">terminal</span>
+<span class="font-label-caps text-label-caps uppercase tracking-widest">Logs</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant/70 hover:bg-white/5 hover:text-primary transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-label-caps text-label-caps uppercase tracking-widest">Containers</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant/70 hover:bg-white/5 hover:text-primary transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-caps text-label-caps uppercase tracking-widest">Settings</span>
+</a>
+</nav>
+<div class="mt-auto px-4 pt-4 border-t border-outline-variant/10">
+<button class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-secondary-container to-primary-container text-white font-bold hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-secondary/20 mb-6">
+                New Deployment
+            </button>
+<div class="space-y-1">
+<a class="flex items-center gap-3 px-4 py-2 rounded-xl text-on-surface-variant/70 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="text-body-sm font-body-sm">Help Center</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 rounded-xl text-on-surface-variant/70 hover:text-error transition-colors" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="text-body-sm font-body-sm">Log Out</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-[280px] h-screen flex flex-col relative">
+<!-- Header -->
+<header class="h-20 flex items-center justify-between px-container-padding border-b border-outline-variant/10 bg-surface/60 backdrop-blur-xl z-40">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary text-3xl">bolt</span>
+<h2 class="font-headline-sm text-headline-sm text-primary">Deployment Assistant</h2>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex -space-x-2">
+<img alt="User 1" class="w-8 h-8 rounded-full border-2 border-surface" data-alt="A professional close-up headshot of a senior software engineer in a high-tech office. The lighting is cool and clinical, emphasizing a modern corporate dark-mode aesthetic with subtle cyan rim lighting. The background features blurred monitors showing complex code structures and server statistics." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXxEPBsX1B0vuCpcwNabcEvHduKyx81Lwl2-KtsU6iAiq1O2Lel7IU81EeKo45SdNVXSeTqYpIgQMLPUnPhdo93B-a4DeN0sGb52i8fvQ58v-nQlk4TQ8KMOyJ6Ija5RlCKV_vW3jT1l4sq_f5JKut2eLQR7dyYWtoKYi_K-Mfbe4ShCK3mdK6UJwyOihAOhg1crccYWUeVO1TioRs9Nj2_mfIW9zzRl4rPYR6QQ0oz_vtKsFJIi0Bfvh-L99zbbv83DQckba_T_E"/>
+<div class="w-8 h-8 rounded-full border-2 border-surface bg-surface-container-highest flex items-center justify-center text-[10px] font-bold">+4</div>
+</div>
+<div class="h-8 w-px bg-outline-variant/20"></div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors cursor-pointer">notifications</span>
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors cursor-pointer">smart_toy</span>
+</div>
+</div>
+</header>
+<!-- Dynamic Content Area -->
+<div class="flex-1 flex overflow-hidden">
+<!-- Chat Interface -->
+<section class="flex-1 flex flex-col p-container-padding space-y-gutter relative overflow-y-auto">
+<!-- Chat Messages -->
+<div class="flex-1 space-y-8 pb-32">
+<!-- AI Message -->
+<div class="flex gap-4 max-w-3xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center shrink-0 border border-primary/20">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+</div>
+<div class="space-y-4">
+<div class="glass-card p-6 rounded-2xl rounded-tl-none">
+<p class="text-body-md text-on-surface">Hello architect. I've analyzed the current deployment state of <span class="text-primary font-mono font-bold">cluster-prod-01</span>. I've detected a memory leak in the billing-service pod that may lead to an OOM kill within the next 4 hours. How would you like to proceed?</p>
+</div>
+<div class="flex gap-3">
+<span class="px-3 py-1 bg-surface-container-highest rounded-full text-body-sm text-on-surface-variant border border-outline-variant/20">Memory leak detected</span>
+<span class="px-3 py-1 bg-error-container/20 rounded-full text-body-sm text-error border border-error/20">Critical: OOM Imminent</span>
+</div>
+</div>
+</div>
+<!-- User Message -->
+<div class="flex gap-4 max-w-3xl ml-auto flex-row-reverse">
+<div class="w-10 h-10 rounded-full bg-secondary-container/30 flex items-center justify-center shrink-0 border border-secondary/20">
+<span class="material-symbols-outlined text-secondary">person</span>
+</div>
+<div class="glass-card p-6 rounded-2xl rounded-tr-none bg-secondary-container/10">
+<p class="text-body-md text-on-surface">Can you show me the log snippets for billing-service highlighting the leak? Also, check if scaling the replicas can temporarily mitigate the impact.</p>
+</div>
+</div>
+<!-- AI Response with Code/Log -->
+<div class="flex gap-4 max-w-3xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center shrink-0 border border-primary/20">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+</div>
+<div class="space-y-4 w-full">
+<div class="glass-card p-6 rounded-2xl rounded-tl-none space-y-4">
+<p class="text-body-md text-on-surface">Retrieving telemetry for <code class="font-code-snippet text-secondary">billing-service-v2</code>. You can see the exponential heap growth below. Scaling to 5 nodes will buy 12 hours of overhead.</p>
+<div class="bg-surface-container-lowest rounded-lg border border-outline-variant/30 overflow-hidden">
+<div class="bg-surface-container-high px-4 py-2 border-b border-outline-variant/20 flex justify-between items-center">
+<span class="text-[10px] font-label-caps uppercase tracking-widest text-on-surface-variant">billing-service-logs.sh</span>
+<span class="material-symbols-outlined text-sm cursor-pointer hover:text-primary">content_copy</span>
+</div>
+<pre class="p-4 font-code-snippet text-code-snippet text-on-surface-variant/80 overflow-x-auto"><span class="text-error">[CRIT]</span> 14:02:11 FATAL_ALLOC: Memory limit exceeded in worker_thread_01
+<span class="text-on-surface-variant">14:02:15 Garbage collection failed to reclaim 452MB</span>
+<span class="text-primary-fixed">14:02:18 AI_ANNOTATION: Continuous allocation detected in /src/utils/cache.go:112</span>
+<span class="text-on-surface-variant">14:02:22 Pod health probe: 0/1 ready (Restarting...)</span></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Floating Action Cards Overlay -->
+<div class="absolute bottom-32 left-0 w-full px-container-padding flex gap-4 overflow-x-auto pb-4 mask-fade-right">
+<button class="glass-card flex items-center gap-3 px-6 py-4 rounded-2xl hover:bg-white/10 hover:-translate-y-1 transition-all group border-primary/20 neon-glow-hover shrink-0">
+<span class="material-symbols-outlined text-primary">analytics</span>
+<div class="text-left">
+<p class="font-bold text-body-sm">Investigate latency spike</p>
+<p class="text-[10px] text-on-surface-variant uppercase">3 Instances affected</p>
+</div>
+</button>
+<button class="glass-card flex items-center gap-3 px-6 py-4 rounded-2xl hover:bg-white/10 hover:-translate-y-1 transition-all group border-secondary/20 neon-glow-hover shrink-0">
+<span class="material-symbols-outlined text-secondary">schema</span>
+<div class="text-left">
+<p class="font-bold text-body-sm">Scale cluster to 10 nodes</p>
+<p class="text-[10px] text-on-surface-variant uppercase">Optimization Suggested</p>
+</div>
+</button>
+<button class="glass-card flex items-center gap-3 px-6 py-4 rounded-2xl hover:bg-white/10 hover:-translate-y-1 transition-all group border-outline-variant shrink-0">
+<span class="material-symbols-outlined text-on-surface-variant">history</span>
+<div class="text-left">
+<p class="font-bold text-body-sm">Rollback last commit</p>
+<p class="text-[10px] text-on-surface-variant uppercase">v2.4.1 -&gt; v2.4.0</p>
+</div>
+</button>
+</div>
+<!-- Terminal Input Area -->
+<div class="absolute bottom-8 left-0 w-full px-container-padding">
+<div class="glass-card p-2 rounded-2xl border-primary/30 flex items-center gap-4 bg-surface-container-low/60 backdrop-blur-2xl neon-glow-primary">
+<div class="flex items-center gap-3 pl-4 text-primary">
+<span class="material-symbols-outlined">terminal</span>
+<span class="font-bold font-code-snippet">/pilot:</span>
+</div>
+<input class="flex-1 bg-transparent border-none focus:ring-0 text-on-surface font-code-snippet text-body-md placeholder:text-on-surface-variant/40 py-4" placeholder="Type a command or ask Pilot..." type="text"/>
+<div class="flex items-center gap-2 pr-2">
+<button class="p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant">mic</span>
+</button>
+<button class="p-3 rounded-xl bg-primary text-on-primary font-bold hover:brightness-110 active:scale-95 transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-lg">arrow_upward</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Debug View Pane (Right Sidebar) -->
+<aside class="w-[400px] border-l border-outline-variant/10 bg-surface-container-lowest flex flex-col">
+<div class="p-6 border-b border-outline-variant/10 flex justify-between items-center bg-surface-container-low/20">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-xl">monitoring</span>
+<h3 class="font-label-caps text-label-caps uppercase tracking-widest text-on-surface">Debug View</h3>
+</div>
+<span class="px-2 py-0.5 bg-primary/10 text-primary border border-primary/20 text-[10px] rounded uppercase font-bold">Live</span>
+</div>
+<div class="flex-1 overflow-y-auto p-4 space-y-4">
+<!-- Real-time metrics visualization (Mock) -->
+<div class="glass-card p-4 rounded-xl space-y-4">
+<div class="flex justify-between items-end">
+<div>
+<p class="text-[10px] text-on-surface-variant uppercase">CPU Usage</p>
+<p class="text-xl font-bold font-headline-sm text-primary">42.8%</p>
+</div>
+<div class="h-10 flex items-end gap-1">
+<div class="w-1 bg-primary/20 h-4 rounded-full"></div>
+<div class="w-1 bg-primary/40 h-6 rounded-full"></div>
+<div class="w-1 bg-primary/60 h-8 rounded-full"></div>
+<div class="w-1 bg-primary h-10 rounded-full"></div>
+<div class="w-1 bg-primary/70 h-5 rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- AI Annotations Feed -->
+<div class="space-y-3">
+<p class="text-[10px] font-label-caps uppercase tracking-widest text-on-surface-variant/60 ml-2">Pilot Observations</p>
+<div class="glass-card p-4 rounded-xl border-l-4 border-primary relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-sm cursor-pointer">open_in_new</span>
+</div>
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary mt-0.5">info</span>
+<div class="space-y-1">
+<p class="text-body-sm font-bold">Traffic Diversion Detected</p>
+<p class="text-[12px] text-on-surface-variant leading-relaxed">Load balancer is shifting 15% more traffic to <code class="bg-surface/50 px-1 rounded">zone-us-east-1a</code>.</p>
+<p class="text-[10px] text-primary/60 font-mono">14:22:45</p>
+</div>
+</div>
+</div>
+<div class="glass-card p-4 rounded-xl border-l-4 border-error relative overflow-hidden group">
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-error mt-0.5">warning</span>
+<div class="space-y-1">
+<p class="text-body-sm font-bold">Latency Anomaly</p>
+<p class="text-[12px] text-on-surface-variant leading-relaxed">P99 latency in <code class="bg-surface/50 px-1 rounded">auth-service</code> spiked to 1.2s (+450%).</p>
+<p class="text-[10px] text-error/60 font-mono">14:25:12</p>
+</div>
+</div>
+</div>
+<div class="glass-card p-4 rounded-xl border-l-4 border-secondary relative overflow-hidden group">
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-secondary mt-0.5">auto_awesome</span>
+<div class="space-y-1">
+<p class="text-body-sm font-bold">Auto-Scale Recommendation</p>
+<p class="text-[12px] text-on-surface-variant leading-relaxed">Suggesting HPA trigger for <code class="bg-surface/50 px-1 rounded">worker-pool</code>.</p>
+<button class="mt-2 text-[10px] font-bold text-secondary border border-secondary/30 px-2 py-1 rounded hover:bg-secondary/10 transition-colors uppercase">Apply Patch</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Logs Stream -->
+<div class="pt-4 space-y-2">
+<p class="text-[10px] font-label-caps uppercase tracking-widest text-on-surface-variant/60 ml-2">Live Log Stream</p>
+<div class="bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-3 font-code-snippet text-[11px] leading-5 text-on-surface-variant/50 max-h-60 overflow-hidden relative">
+<div class="absolute inset-x-0 top-0 h-8 bg-gradient-to-b from-surface-container-lowest to-transparent pointer-events-none"></div>
+<div><span class="text-primary-fixed/40">14:30:01</span> [INFO] Connection established...</div>
+<div><span class="text-primary-fixed/40">14:30:03</span> [DEBUG] Handshake complete v1.2</div>
+<div><span class="text-primary-fixed/40">14:30:05</span> [INFO] Processing batch job #9921</div>
+<div><span class="text-error/40">14:30:08</span> [WARN] Retrying upstream call...</div>
+<div><span class="text-primary-fixed/40">14:30:10</span> [INFO] Heartbeat OK</div>
+<div class="flex items-center"><span class="text-primary-fixed/40">14:30:12</span> [INFO] Waiting for input <span class="terminal-cursor"></span></div>
+<div class="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-surface-container-lowest to-transparent pointer-events-none"></div>
+</div>
+</div>
+</div>
+</aside>
+</div>
+</main>
+<!-- Background Atmospheric Glows -->
+<div class="fixed top-[-10%] right-[-10%] w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] pointer-events-none"></div>
+<div class="fixed bottom-[-10%] left-[280px] w-[600px] h-[600px] bg-secondary/5 rounded-full blur-[150px] pointer-events-none"></div>
+<script>
+        // Micro-interactions for the terminal input
+        const terminalInput = document.querySelector('input');
+        terminalInput.addEventListener('focus', () => {
+            terminalInput.parentElement.classList.add('border-primary');
+            terminalInput.parentElement.classList.remove('border-primary/30');
+        });
+        terminalInput.addEventListener('blur', () => {
+            terminalInput.parentElement.classList.remove('border-primary');
+            terminalInput.parentElement.classList.add('border-primary/30');
+        });
+
+        // Simulate new log arrivals
+        const logContainer = document.querySelector('.max-h-60 > div:last-child');
+        setInterval(() => {
+            const time = new Date().toLocaleTimeString('en-GB', { hour12: false });
+            const logs = [
+                "[INFO] Thread pool adjusted",
+                "[DEBUG] Cache hit ratio 94%",
+                "[INFO] Heartbeat pulse received",
+                "[INFO] Metrics pushed to collector"
+            ];
+            const randomLog = logs[Math.floor(Math.random() * logs.length)];
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `<span class="text-primary-fixed/40">${time}</span> ${randomLog}`;
+            logContainer.before(logEntry);
+            if (logContainer.parentElement.children.length > 15) {
+                logContainer.parentElement.children[1].remove();
+            }
+        }, 3000);
+    </script>
+</body></html>
