@@ -1,30 +1,62 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useEffectEvent } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { projectsAPI, deploymentsAPI } from '../api/client';
+
+const requestProjectData = async (projectId) => {
+  const [projectResponse, deploymentsResponse] = await Promise.all([
+    projectsAPI.get(projectId),
+    deploymentsAPI.getByProject(projectId),
+  ]);
+
+  return {
+    project: projectResponse.data,
+    deployments: deploymentsResponse.data,
+  };
+};
 
 export default function ProjectDetail() {
   const { id } = useParams();
   const [project, setProject] = useState(null);
   const [deployments, setDeployments] = useState([]);
+  const [error, setError] = useState('');
 
-  const load = async () => {
-    const [p, d] = await Promise.all([
-      projectsAPI.get(id),
-      deploymentsAPI.getByProject(id),
-    ]);
-    setProject(p.data);
-    setDeployments(d.data);
-  };
+  const loadProjectData = useEffectEvent(async (projectId = id) => {
+    try {
+      setError('');
+      const data = await requestProjectData(projectId);
+      setProject(data.project);
+      setDeployments(data.deployments);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to load project');
+    }
+  });
 
-  useEffect(() => { load(); }, [id]);
+  useEffect(() => {
+    const fetchCurrentProject = async () => {
+      await loadProjectData(id);
+    };
+
+    const timeoutId = setTimeout(() => {
+      void fetchCurrentProject();
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
+  }, [id]);
 
   const deploy = async () => {
-    await deploymentsAPI.create(id);
-    load();
+    try {
+      setError('');
+      await deploymentsAPI.create(id);
+      const data = await requestProjectData(id);
+      setProject(data.project);
+      setDeployments(data.deployments);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to start deployment');
+    }
   };
 
-  if (!project) return <div className="flex items-center justify-center h-64 text-on-surface-variant font-mono">Loading...</div>;
+  if (!project && !error) return <div className="flex items-center justify-center h-64 text-on-surface-variant font-mono">Loading...</div>;
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
@@ -46,7 +78,12 @@ export default function ProjectDetail() {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {error && (
+        <div className="bg-error-container/20 border border-error/30 text-error rounded-lg p-3 text-sm font-mono mb-6">{error}</div>
+      )}
+
+      {project && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="glass-panel rounded-xl p-6">
           <h2 className="font-headline text-sm text-white mb-6 flex items-center gap-2">
             <span className="material-symbols-outlined text-primary">rocket_launch</span>
@@ -84,7 +121,8 @@ export default function ProjectDetail() {
             Analyze Logs
           </Link>
         </div>
-      </div>
+        </div>
+      )}
     </motion.div>
   );
 }

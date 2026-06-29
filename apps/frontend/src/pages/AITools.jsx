@@ -11,25 +11,33 @@ export default function AITools() {
   const [workflowResult, setWorkflowResult] = useState('');
   const [loadingDocker, setLoadingDocker] = useState(false);
   const [loadingWorkflow, setLoadingWorkflow] = useState(false);
+  const [dockerError, setDockerError] = useState('');
+  const [workflowError, setWorkflowError] = useState('');
 
   const genDockerfile = async (e) => {
     e.preventDefault();
     if (!dockerStack.trim()) return;
     setLoadingDocker(true);
+    setDockerError('');
     try {
       const { data } = await aiAPI.generateDockerfile({ techStack: dockerStack, ports: parseInt(dockerPorts) || 3000 });
       setDockerResult(data.dockerfile);
-    } catch {} finally { setLoadingDocker(false); }
+    } catch (err) {
+      setDockerError(err.response?.data?.message || 'Failed to generate Dockerfile');
+    } finally { setLoadingDocker(false); }
   };
 
   const genWorkflow = async (e) => {
     e.preventDefault();
     if (!workflowStack.trim()) return;
     setLoadingWorkflow(true);
+    setWorkflowError('');
     try {
       const { data } = await aiAPI.generateWorkflow({ techStack: workflowStack, deployTarget: workflowTarget });
       setWorkflowResult(data.workflow);
-    } catch {} finally { setLoadingWorkflow(false); }
+    } catch (err) {
+      setWorkflowError(err.response?.data?.message || 'Failed to generate workflow');
+    } finally { setLoadingWorkflow(false); }
   };
 
   const copy = (text) => navigator.clipboard.writeText(text);
@@ -54,6 +62,7 @@ export default function AITools() {
             className="px-6 py-3 bg-primary text-background font-mono text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-white transition-all disabled:opacity-50">
             {loadingDocker ? 'GENERATING...' : 'Generate Dockerfile'}
           </button>
+          {dockerError && <div className="bg-error-container/20 border border-error/30 text-error rounded-lg p-3 text-sm font-mono">{dockerError}</div>}
           {dockerResult && (
             <div>
               <div className="flex items-center justify-between mb-2">
@@ -81,6 +90,7 @@ export default function AITools() {
             className="px-6 py-3 bg-primary text-background font-mono text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-white transition-all disabled:opacity-50">
             {loadingWorkflow ? 'GENERATING...' : 'Generate Workflow'}
           </button>
+          {workflowError && <div className="bg-error-container/20 border border-error/30 text-error rounded-lg p-3 text-sm font-mono">{workflowError}</div>}
           {workflowResult && (
             <div>
               <div className="flex items-center justify-between mb-2">

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useEffectEvent } from 'react';
 import { motion } from 'framer-motion';
 import { monitoringAPI } from '../api/client';
 
@@ -7,13 +7,16 @@ const CHART_HEIGHT = 150;
 
 export default function Monitoring() {
   const [metrics, setMetrics] = useState(null);
-  const [history, setHistory] = useState([]);
   const [logs, setLogs] = useState([]);
   const [insights, setInsights] = useState([]);
   const [alertTick, setAlertTick] = useState(0);
   const [uptimeData, setUptimeData] = useState([]);
   const [heatmap, setHeatmap] = useState([]);
   const [chartPath, setChartPath] = useState('');
+  const [displayStats, setDisplayStats] = useState({ networkInbound: '1.0 Gbps', networkBarWidth: '30%', alertCount: 1, uptimeAverage: '99.500% AVG', queryRateTop: '4.0k', queryRateMid: '2.0k' });
+  const [alerts, setAlerts] = useState([]);
+  const [error, setError] = useState('');
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
   const logTail = useRef(null);
 
   const generateUptime = () =>
@@ -31,16 +34,15 @@ export default function Monitoring() {
     return `${d} L${CHART_WIDTH} ${CHART_HEIGHT} L0 ${CHART_HEIGHT} Z`;
   };
 
-  const fetchAll = async () => {
+  const refreshMonitoring = useEffectEvent(async () => {
     try {
-      const [mRes, hRes, lRes, iRes] = await Promise.all([
+      setError('');
+      const [mRes, lRes, iRes] = await Promise.all([
         monitoringAPI.getMetrics(),
-        monitoringAPI.getHistory(),
         monitoringAPI.getLogs(3),
         monitoringAPI.getInsights(),
       ]);
       setMetrics(mRes.data);
-      setHistory(hRes.data);
       setInsights(iRes.data);
       setLogs((prev) => {
         const next = [...prev, ...lRes.data];
@@ -49,14 +51,49 @@ export default function Monitoring() {
       setUptimeData(generateUptime());
       setHeatmap(generateHeatmap());
       setChartPath(generateChartPath());
+      setDisplayStats({
+        networkInbound: `${(1 + Math.random() * 0.5).toFixed(1)} Gbps`,
+        networkBarWidth: `${Math.round(30 + Math.random() * 20)}%`,
+        alertCount: 1 + Math.floor(Math.random() * 3),
+        uptimeAverage: `${(99.5 + Math.random() * 0.5).toFixed(3)}% AVG`,
+        queryRateTop: `${(Math.random() * 2 + 4).toFixed(1)}k`,
+        queryRateMid: `${(Math.random() * 2 + 2).toFixed(1)}k`,
+      });
+      setCurrentTime(Date.now());
+      setAlerts([{
+        severity: alertTick % 3 === 0 ? 'Critical' : alertTick % 3 === 1 ? 'Warning' : 'Info',
+        title: alertTick % 3 === 0
+          ? `Pod 'api-gateway-${Math.floor(Math.random() * 100)}' crash loop`
+          : alertTick % 3 === 1
+            ? `High Latency in ${['EU-WEST-1', 'US-EAST-2', 'AP-SOUTHEAST-1'][alertTick % 3]}`
+            : `Scaling initiated: workers-v${Math.floor(Math.random() * 5)}`,
+        desc: alertTick % 3 === 0
+          ? 'Exit code 137 (OOMKilled) detected.'
+          : alertTick % 3 === 1
+            ? `Response times exceeded ${400 + Math.floor(Math.random() * 100)}ms.`
+            : 'AI predicted load spike. Scaling to 12 nodes.',
+        border: alertTick % 3 === 0 ? 'border-error' : alertTick % 3 === 1 ? 'border-secondary' : 'border-primary-fixed',
+        text: alertTick % 3 === 0 ? 'text-error' : alertTick % 3 === 1 ? 'text-secondary' : 'text-primary-fixed',
+      }]);
       setAlertTick((t) => t + 1);
-    } catch {}
-  };
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to load monitoring data');
+    }
+  });
 
   useEffect(() => {
-    fetchAll();
-    const interval = setInterval(fetchAll, 3000);
-    return () => clearInterval(interval);
+    const runRefresh = async () => {
+      await refreshMonitoring();
+    };
+
+    const timeoutId = setTimeout(() => {
+      void runRefresh();
+    }, 0);
+    const interval = setInterval(runRefresh, 3000);
+    return () => {
+      clearTimeout(timeoutId);
+      clearInterval(interval);
+    };
   }, []);
 
   useEffect(() => {
@@ -70,27 +107,8 @@ export default function Monitoring() {
   const lowCpu = cpu.length > 0 ? Math.min(...cpu.map((c) => c.value)) : 0;
   const highCpu = cpu.length > 0 ? Math.max(...cpu.map((c) => c.value)) : 0;
 
-  const alerts = [
-    {
-      severity: alertTick % 3 === 0 ? 'Critical' : alertTick % 3 === 1 ? 'Warning' : 'Info',
-      title: alertTick % 3 === 0
-        ? `Pod 'api-gateway-${Math.floor(Math.random() * 100)}' crash loop`
-        : alertTick % 3 === 1
-          ? `High Latency in ${['EU-WEST-1', 'US-EAST-2', 'AP-SOUTHEAST-1'][alertTick % 3]}`
-          : `Scaling initiated: workers-v${Math.floor(Math.random() * 5)}`,
-      desc: alertTick % 3 === 0
-        ? 'Exit code 137 (OOMKilled) detected.'
-        : alertTick % 3 === 1
-          ? `Response times exceeded ${400 + Math.floor(Math.random() * 100)}ms.`
-          : 'AI predicted load spike. Scaling to 12 nodes.',
-      border: alertTick % 3 === 0 ? 'border-error' : alertTick % 3 === 1 ? 'border-secondary' : 'border-primary-fixed',
-      text: alertTick % 3 === 0 ? 'text-error' : alertTick % 3 === 1 ? 'text-secondary' : 'text-primary-fixed',
-    },
-  ];
-
   const cpuTrend = lowCpu > 0 ? (((lastCpu - lowCpu) / lowCpu) * 100).toFixed(1) : '0.0';
   const ramTrend = lastRam > 0 ? (((lastRam - ram[0]?.value || lastRam) / (ram[0]?.value || lastRam)) * 100).toFixed(1) : '0.0';
-
   const logColors = (line) => {
     const parts = line.split(' ');
     const level = parts[1]?.replace(':', '');
@@ -117,12 +135,16 @@ export default function Monitoring() {
         </div>
       </header>
 
+      {error && (
+        <div className="bg-error-container/20 border border-error/30 text-error rounded-lg p-3 text-sm font-mono mb-6">{error}</div>
+      )}
+
       <div className="grid grid-cols-12 gap-gutter">
         <div className="col-span-12 lg:col-span-9 grid grid-cols-3 gap-gutter">
           {[
             { title: 'CLUSTER CPU USAGE', value: `${lastCpu.toFixed(1)}%`, trend: `${cpuTrend.startsWith('-') ? '' : '+'}${cpuTrend}%`, trendUp: cpuTrend > 0, color: 'text-primary', barW: `${lastCpu}%` },
             { title: 'MEMORY ALLOCATION', value: `${lastRam.toFixed(1)}%`, trend: `${ramTrend.startsWith('-') ? '' : '+'}${ramTrend}%`, trendUp: ramTrend > 0, color: 'text-secondary', barW: `${lastRam}%` },
-            { title: 'NETWORK INBOUND', value: `${(1 + Math.random() * 0.5).toFixed(1)} Gbps`, sub: 'Stable', color: 'text-primary', barW: `${Math.round(30 + Math.random() * 20)}%`, pulse: true },
+            { title: 'NETWORK INBOUND', value: displayStats.networkInbound, sub: 'Stable', color: 'text-primary', barW: displayStats.networkBarWidth, pulse: true },
           ].map((s, i) => (
             <div key={i} className="glass-panel rounded-xl p-6 relative overflow-hidden group">
               <div className="absolute top-0 right-0 w-32 h-32 bg-primary-fixed/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-primary-fixed/10 transition-all" />
@@ -149,7 +171,7 @@ export default function Monitoring() {
         <div className="col-span-12 lg:col-span-3 glass-panel rounded-xl flex flex-col">
           <div className="p-6 border-b border-outline/10">
             <h3 className="font-headline text-sm text-primary flex items-center justify-between">
-              Live Alerts <span className="bg-error-container/20 text-error px-2 py-0.5 rounded text-[10px] uppercase font-bold animate-pulse">{1 + Math.floor(Math.random() * 3)} Active</span>
+              Live Alerts <span className="bg-error-container/20 text-error px-2 py-0.5 rounded text-[10px] uppercase font-bold animate-pulse">{displayStats.alertCount} Active</span>
             </h3>
           </div>
           <div className="flex-1 overflow-y-auto no-scrollbar p-4 space-y-4">
@@ -169,7 +191,7 @@ export default function Monitoring() {
                 className="p-3 rounded-xl bg-white/[0.02] border border-outline/10">
                 <p className="font-body-sm text-on-surface-variant text-[12px]">{ins.text}</p>
                 <span className="font-mono text-[9px] text-primary-fixed-dim/50 mt-1 block">
-                  {Math.floor((Date.now() - new Date(ins.time).getTime()) / 60000)}m ago
+                  {Math.floor((currentTime - new Date(ins.time).getTime()) / 60000)}m ago
                 </span>
               </motion.div>
             ))}
@@ -181,7 +203,7 @@ export default function Monitoring() {
             <h3 className="font-headline text-lg text-primary flex items-center gap-2">
               <span className="material-symbols-outlined">bolt</span> Uptime Monitor
             </h3>
-            <span className="font-mono text-xs text-primary-fixed-dim">{`${(99.5 + Math.random() * 0.5).toFixed(3)}% AVG`}</span>
+            <span className="font-mono text-xs text-primary-fixed-dim">{displayStats.uptimeAverage}</span>
           </div>
           <div className="h-40 flex items-end gap-1 px-2">
             {uptimeData.map((h, i) => (
@@ -223,8 +245,8 @@ export default function Monitoring() {
               <path d={chartPath} fill="url(#chartGrad)" stroke="#00dbe7" strokeWidth="2" className="transition-all duration-500" />
             </svg>
             <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-[8px] text-on-surface-variant font-mono pointer-events-none pl-1">
-              <span>{(Math.random() * 2 + 4).toFixed(1)}k</span>
-              <span>{(Math.random() * 2 + 2).toFixed(1)}k</span>
+              <span>{displayStats.queryRateTop}</span>
+              <span>{displayStats.queryRateMid}</span>
               <span>0</span>
             </div>
           </div>

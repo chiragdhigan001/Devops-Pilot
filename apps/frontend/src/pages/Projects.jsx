@@ -18,7 +18,13 @@ export default function Projects() {
     }).finally(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      void load();
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
+  }, []);
 
   const create = async (e) => {
     e.preventDefault();

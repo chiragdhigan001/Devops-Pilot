@@ -12,12 +12,12 @@ import { connectRedis } from './config/redis.js';
 import { initSocket } from './socket/index.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
 import User from './models/User.js';
-
 import authRoutes from './routes/auth.js';
 import projectRoutes from './routes/projects.js';
 import deploymentRoutes from './routes/deployments.js';
 import aiRoutes from './routes/ai.js';
 import monitoringRoutes from './routes/monitoring.js';
+import client from "prom-client"
 
 const app = express();
 const server = createServer(app);
@@ -27,6 +27,7 @@ app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
 app.use(morgan('dev'));
 app.use(express.json({ limit: '10mb' }));
 app.use(apiLimiter);
+client.collectDefaultMetrics();
 
 passport.use(new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID,
@@ -74,8 +75,19 @@ app.use('/api/deployments', deploymentRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/monitoring', monitoringRoutes);
 
+app.get("/metrics", async (req, res) => {
+  res.set("Content-Type", client.register.contentType);
+  res.end(await client.register.metrics());
+});
+
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+app.get('/', (req, res) => {
+  res.json({
+    message: 'DevOps Pilot AI Backend is running 🚀'
+  });
 });
 
 app.use((err, req, res, next) => {

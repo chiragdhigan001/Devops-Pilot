@@ -16,32 +16,38 @@ function timeAgo(isoString) {
 export default function Dashboard() {
   const [metrics, setMetrics] = useState(null);
   const [projects, setProjects] = useState([]);
-  const [history, setHistory] = useState([]);
   const [stats, setStats] = useState({ totalDeployments: 0, activeProjects: 0, totalProjects: 0 });
   const [insights, setInsights] = useState([]);
+  const [error, setError] = useState('');
   const intervalRef = useRef(null);
 
   const fetchAll = async (isInitial = false) => {
     try {
-      const [metricsRes, statsRes, historyRes, insightsRes, projectsRes] = await Promise.all([
+      setError('');
+      const [metricsRes, statsRes, insightsRes, projectsRes] = await Promise.all([
         monitoringAPI.getMetrics(),
         monitoringAPI.getStats(),
-        monitoringAPI.getHistory(),
         monitoringAPI.getInsights(),
         isInitial ? projectsAPI.getAll() : Promise.resolve(null),
       ]);
       setMetrics(metricsRes.data);
       setStats(statsRes.data);
-      setHistory(historyRes.data);
       setInsights(insightsRes.data.map((i) => ({ ...i, timeAgo: 'Just now' })));
       if (projectsRes) setProjects(projectsRes.data);
-    } catch {}
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to load dashboard data');
+    }
   };
 
   useEffect(() => {
-    fetchAll(true);
+    const timeoutId = setTimeout(() => {
+      void fetchAll(true);
+    }, 0);
     intervalRef.current = setInterval(() => fetchAll(false), 5000);
-    return () => clearInterval(intervalRef.current);
+    return () => {
+      clearTimeout(timeoutId);
+      clearInterval(intervalRef.current);
+    };
   }, []);
 
   useEffect(() => {
@@ -78,6 +84,10 @@ export default function Dashboard() {
           </button>
         </div>
       </header>
+
+      {error && (
+        <div className="bg-error-container/20 border border-error/30 text-error rounded-lg p-3 text-sm font-mono mb-6">{error}</div>
+      )}
 
       {/* Stats row */}
       <div className="grid grid-cols-12 gap-gutter mb-6">
