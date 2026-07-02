@@ -1,14 +1,25 @@
 {
   "name": "devopspilot-ai",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "private": true,
+  "description": "AI-powered DevOps automation platform — deploy, monitor, and orchestrate with intelligent automation.",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "npm --prefix apps/backend run dev",
     "dev:frontend": "npm --prefix apps/frontend run dev",
     "build": "npm --prefix apps/frontend run build",
-    "start": "npm --prefix apps/backend run start"
+    "start": "npm --prefix apps/backend run start",
+    "start:dev": "npm --prefix apps/backend run start:dev",
+    "docker:build": "docker compose build",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "setup": "npm install && cd apps/backend && npm install && cd ../frontend && npm install",
+    "lint": "npm --prefix apps/frontend run lint"
   },
+  "keywords": ["devops", "ai", "deployment", "automation", "monitoring"],
   "devDependencies": {
     "concurrently": "^9.1.2"
   }

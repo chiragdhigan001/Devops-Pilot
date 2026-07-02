@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { authAPI } from '../api/client';
 import { AuthContext } from './authContext';
 
@@ -9,6 +9,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
+      setLoading(false);
       return;
     }
 
@@ -45,23 +46,30 @@ export const AuthProvider = ({ children }) => {
     return data;
   };
 
-  const logout = () => {
+  const logout = useCallback(() => {
     localStorage.removeItem('token');
     localStorage.removeItem('refreshToken');
     setUser(null);
-  };
+  }, []);
 
-  const setUserFromToken = (token, refreshToken) => {
+  const setUserFromToken = useCallback(async (token, refreshToken) => {
     localStorage.setItem('token', token);
     if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
-    authAPI.getMe().then((res) => setUser(res.data)).catch(() => {
+    try {
+      const res = await authAPI.getMe();
+      setUser(res.data);
+      return res.data;
+    } catch {
       localStorage.removeItem('token');
       localStorage.removeItem('refreshToken');
-    });
-  };
+      throw new Error('Failed to fetch user');
+    }
+  }, []);
+
+  const value = { user, loading, login, register, logout, setUserFromToken };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, setUserFromToken }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

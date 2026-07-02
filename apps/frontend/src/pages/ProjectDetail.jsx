@@ -20,13 +20,14 @@ export default function ProjectDetail() {
   const [project, setProject] = useState(null);
   const [deployments, setDeployments] = useState([]);
   const [error, setError] = useState('');
+  const [deploying, setDeploying] = useState(false);
 
   const loadProjectData = useEffectEvent(async (projectId = id) => {
     try {
-      setError('');
       const data = await requestProjectData(projectId);
       setProject(data.project);
       setDeployments(data.deployments);
+      setDeploying(data.project.deploymentStatus === 'deploying');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load project');
     }
@@ -44,14 +45,29 @@ export default function ProjectDetail() {
     return () => clearTimeout(timeoutId);
   }, [id]);
 
+  useEffect(() => {
+    if (!deploying) {
+      return undefined;
+    }
+
+    const intervalId = setInterval(() => {
+      void loadProjectData(id);
+    }, 3000);
+
+    return () => clearInterval(intervalId);
+  }, [deploying, id]);
+
   const deploy = async () => {
     try {
       setError('');
+      setDeploying(true);
       await deploymentsAPI.create(id);
       const data = await requestProjectData(id);
       setProject(data.project);
       setDeployments(data.deployments);
+      setDeploying(data.project.deploymentStatus === 'deploying');
     } catch (err) {
+      setDeploying(false);
       setError(err.response?.data?.message || 'Failed to start deployment');
     }
   };
@@ -67,19 +83,32 @@ export default function ProjectDetail() {
         <div>
           <h1 className="font-headline text-2xl text-primary-fixed tracking-tight">{project.name}</h1>
           {project.githubRepo && <p className="font-mono text-xs text-on-surface-variant mt-1">{project.githubRepo}</p>}
+          {project.subdomain && <p className="font-mono text-xs text-primary mt-2">{project.subdomain}</p>}
+          {project.publicUrl && !project.deployedUrl && (
+            <p className="font-mono text-xs text-on-surface-variant mt-1">Reserved URL: {project.publicUrl}</p>
+          )}
+          {project.deployedUrl && (
+            <a href={project.deployedUrl} target="_blank" rel="noreferrer" className="font-mono text-xs text-primary mt-2 inline-block hover:underline">
+              Live URL: {project.deployedUrl}
+            </a>
+          )}
         </div>
         <div className="flex gap-3">
           <Link to="/ai" className="px-5 py-3 glass-panel font-mono text-[10px] uppercase tracking-widest text-primary hover:neon-glow transition-all">
             AI Config
           </Link>
-          <button onClick={deploy} className="px-5 py-3 bg-primary text-background font-mono text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-white transition-all neon-glow">
-            Deploy
+          <button onClick={deploy} disabled={deploying} className="px-5 py-3 bg-primary text-background font-mono text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-white transition-all neon-glow disabled:opacity-60 disabled:cursor-not-allowed">
+            {deploying ? 'Deploying...' : 'Deploy'}
           </button>
         </div>
       </header>
 
       {error && (
         <div className="bg-error-container/20 border border-error/30 text-error rounded-lg p-3 text-sm font-mono mb-6">{error}</div>
+      )}
+
+      {project?.lastDeploymentError && (
+        <div className="bg-error-container/20 border border-error/30 text-error rounded-lg p-3 text-sm font-mono mb-6">{project.lastDeploymentError}</div>
       )}
 
       {project && (
@@ -103,6 +132,17 @@ export default function ProjectDetail() {
                 }`}>{d.status.toUpperCase()}</span>
               </div>
               <p className="font-mono text-[10px] text-on-surface-variant">{new Date(d.createdAt).toLocaleString()}</p>
+              {d.deployedUrl && (
+                <a href={d.deployedUrl} target="_blank" rel="noreferrer" className="mt-2 inline-block font-mono text-[10px] text-primary hover:underline">
+                  {d.deployedUrl}
+                </a>
+              )}
+              {d.localUrl && (
+                <p className="mt-2 font-mono text-[10px] text-on-surface-variant">Container URL: {d.localUrl}</p>
+              )}
+              {d.errorMessage && (
+                <p className="mt-2 font-mono text-[10px] text-error">{d.errorMessage}</p>
+              )}
               {d.logs && (
                 <pre className="mt-3 font-mono text-[11px] text-on-surface-variant/80 bg-background rounded-lg p-3 max-h-32 overflow-auto border border-white/5">
                   {d.logs}

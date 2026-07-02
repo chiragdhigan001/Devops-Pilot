@@ -12,6 +12,12 @@ export const authLimiter = rateLimit({
   message: { message: 'Too many auth attempts, please try again later' },
 });
 
+export const deployLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { message: 'Too many deployments, please wait before deploying again' },
+});
+
 export const aiLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
   max: 20,

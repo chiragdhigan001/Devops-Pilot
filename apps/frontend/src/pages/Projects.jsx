@@ -6,7 +6,7 @@ import { projectsAPI } from '../api/client';
 export default function Projects() {
   const [projects, setProjects] = useState([]);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ name: '', githubRepo: '', description: '' });
+  const [form, setForm] = useState({ name: '', githubRepo: '', description: '', subdomain: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -31,7 +31,7 @@ export default function Projects() {
     setError('');
     try {
       await projectsAPI.create(form);
-      setForm({ name: '', githubRepo: '', description: '' });
+      setForm({ name: '', githubRepo: '', description: '', subdomain: '' });
       setShowForm(false);
       load();
     } catch (err) {
@@ -72,6 +72,8 @@ export default function Projects() {
             className="w-full bg-surface-high/50 border border-outline/30 rounded-lg px-4 py-3 text-white font-mono text-sm focus:outline-none focus:border-primary placeholder:text-on-surface-variant/30" />
           <input placeholder="GITHUB REPO (user/repo)" value={form.githubRepo} onChange={(e) => setForm({ ...form, githubRepo: e.target.value })}
             className="w-full bg-surface-high/50 border border-outline/30 rounded-lg px-4 py-3 text-white font-mono text-sm focus:outline-none focus:border-primary placeholder:text-on-surface-variant/30" />
+          <input placeholder="SUBDOMAIN (optional)" value={form.subdomain} onChange={(e) => setForm({ ...form, subdomain: e.target.value })}
+            className="w-full bg-surface-high/50 border border-outline/30 rounded-lg px-4 py-3 text-white font-mono text-sm focus:outline-none focus:border-primary placeholder:text-on-surface-variant/30" />
           <input placeholder="DESCRIPTION" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
             className="w-full bg-surface-high/50 border border-outline/30 rounded-lg px-4 py-3 text-white font-mono text-sm focus:outline-none focus:border-primary placeholder:text-on-surface-variant/30" />
           <button type="submit" className="px-6 py-3 bg-primary text-background font-mono text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-white transition-all">
@@ -98,6 +100,8 @@ export default function Projects() {
                 }`}>{p.deploymentStatus}</span>
               </div>
               {p.githubRepo && <p className="font-mono text-[10px] text-on-surface-variant mb-4">{p.githubRepo}</p>}
+              {p.subdomain && <p className="font-mono text-[10px] text-primary mb-2">{p.subdomain}</p>}
+              {p.publicUrl && <p className="font-mono text-[10px] text-on-surface-variant mb-4 break-all">{p.publicUrl}</p>}
               <div className="flex gap-3">
                 <Link to={`/projects/${p._id}`} className="px-4 py-2 bg-white/5 border border-white/10 font-mono text-[10px] uppercase tracking-widest hover:bg-white/10 transition-all">
                   Deploy

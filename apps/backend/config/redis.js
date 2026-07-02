@@ -4,7 +4,7 @@ let redis = null;
 
 export const connectRedis = async () => {
   try {
-    redis = new Redis(process.env.REDIS_URL);
+    redis = new Redis(process.env.REDIS_URL, { maxRetriesPerAttempt: 1, retryStrategy: () => null });
     redis.on('connect', () => console.log('Redis connected'));
     redis.on('error', (err) => console.error('Redis error:', err.message));
   } catch (error) {

@@ -1,15 +1,38 @@
-import { useState, useEffect, useRef, useEffectEvent } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { monitoringAPI } from '../api/client';
 
 const CHART_WIDTH = 520;
 const CHART_HEIGHT = 150;
 
+const ALERT_TEMPLATES = [
+  {
+    severity: 'Critical',
+    title: (n) => `Pod 'api-gateway-${n}' crash loop`,
+    desc: () => 'Exit code 137 (OOMKilled) detected.',
+    border: 'border-error',
+    text: 'text-error',
+  },
+  {
+    severity: 'Warning',
+    title: (n) => `High Latency in ${['EU-WEST-1', 'US-EAST-2', 'AP-SOUTHEAST-1'][n % 3]}`,
+    desc: (n) => `Response times exceeded ${400 + (n % 5) * 50}ms.`,
+    border: 'border-secondary',
+    text: 'text-secondary',
+  },
+  {
+    severity: 'Info',
+    title: (n) => `Scaling initiated: workers-v${n % 5}`,
+    desc: () => 'AI predicted load spike. Scaling to 12 nodes.',
+    border: 'border-primary-fixed',
+    text: 'text-primary-fixed',
+  },
+];
+
 export default function Monitoring() {
   const [metrics, setMetrics] = useState(null);
   const [logs, setLogs] = useState([]);
   const [insights, setInsights] = useState([]);
-  const [alertTick, setAlertTick] = useState(0);
   const [uptimeData, setUptimeData] = useState([]);
   const [heatmap, setHeatmap] = useState([]);
   const [chartPath, setChartPath] = useState('');
@@ -18,6 +41,7 @@ export default function Monitoring() {
   const [error, setError] = useState('');
   const [currentTime, setCurrentTime] = useState(() => Date.now());
   const logTail = useRef(null);
+  const alertTickRef = useRef(0);
 
   const generateUptime = () =>
     Array.from({ length: 24 }, () => Math.round(70 + Math.random() * 30));
@@ -34,7 +58,7 @@ export default function Monitoring() {
     return `${d} L${CHART_WIDTH} ${CHART_HEIGHT} L0 ${CHART_HEIGHT} Z`;
   };
 
-  const refreshMonitoring = useEffectEvent(async () => {
+  const refreshMonitoring = useCallback(async () => {
     try {
       setError('');
       const [mRes, lRes, iRes] = await Promise.all([
@@ -60,26 +84,21 @@ export default function Monitoring() {
         queryRateMid: `${(Math.random() * 2 + 2).toFixed(1)}k`,
       });
       setCurrentTime(Date.now());
+      const tick = alertTickRef.current;
+      const template = ALERT_TEMPLATES[tick % ALERT_TEMPLATES.length];
+      const n = Math.floor(Math.random() * 100);
       setAlerts([{
-        severity: alertTick % 3 === 0 ? 'Critical' : alertTick % 3 === 1 ? 'Warning' : 'Info',
-        title: alertTick % 3 === 0
-          ? `Pod 'api-gateway-${Math.floor(Math.random() * 100)}' crash loop`
-          : alertTick % 3 === 1
-            ? `High Latency in ${['EU-WEST-1', 'US-EAST-2', 'AP-SOUTHEAST-1'][alertTick % 3]}`
-            : `Scaling initiated: workers-v${Math.floor(Math.random() * 5)}`,
-        desc: alertTick % 3 === 0
-          ? 'Exit code 137 (OOMKilled) detected.'
-          : alertTick % 3 === 1
-            ? `Response times exceeded ${400 + Math.floor(Math.random() * 100)}ms.`
-            : 'AI predicted load spike. Scaling to 12 nodes.',
-        border: alertTick % 3 === 0 ? 'border-error' : alertTick % 3 === 1 ? 'border-secondary' : 'border-primary-fixed',
-        text: alertTick % 3 === 0 ? 'text-error' : alertTick % 3 === 1 ? 'text-secondary' : 'text-primary-fixed',
+        severity: template.severity,
+        title: template.title(n),
+        desc: template.desc(n),
+        border: template.border,
+        text: template.text,
       }]);
-      setAlertTick((t) => t + 1);
+      alertTickRef.current = tick + 1;
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load monitoring data');
     }
-  });
+  }, []);
 
   useEffect(() => {
     const runRefresh = async () => {
@@ -94,7 +113,7 @@ export default function Monitoring() {
       clearTimeout(timeoutId);
       clearInterval(interval);
     };
-  }, []);
+  }, [refreshMonitoring]);
 
   useEffect(() => {
     if (logTail.current) logTail.current.scrollTop = logTail.current.scrollHeight;
@@ -123,7 +142,7 @@ export default function Monitoring() {
   };
 
   return (
-    <motion.div key={alertTick} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+    <motion.div key={alertTickRef.current} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
       <header className="flex justify-between items-center mb-8">
         <div>
           <h2 className="font-headline text-2xl text-primary-fixed tracking-tight">System Monitoring</h2>
@@ -176,7 +195,7 @@ export default function Monitoring() {
           </div>
           <div className="flex-1 overflow-y-auto no-scrollbar p-4 space-y-4">
             {alerts.map((a, i) => (
-              <motion.div key={`${alertTick}-${i}`} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3 }}
+              <motion.div key={`${alertTickRef.current}-${i}`} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3 }}
                 className={`p-4 rounded-xl bg-white/5 border-l-4 ${a.border}`}>
                 <div className="flex justify-between items-start mb-1">
                   <span className={`font-mono text-[10px] uppercase tracking-widest ${a.text}`}>{a.severity}</span>
@@ -187,7 +206,7 @@ export default function Monitoring() {
               </motion.div>
             ))}
             {insights.slice(0, 2).map((ins, i) => (
-              <motion.div key={`ins-${alertTick}-${i}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              <motion.div key={`ins-${alertTickRef.current}-${i}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                 className="p-3 rounded-xl bg-white/[0.02] border border-outline/10">
                 <p className="font-body-sm text-on-surface-variant text-[12px]">{ins.text}</p>
                 <span className="font-mono text-[9px] text-primary-fixed-dim/50 mt-1 block">

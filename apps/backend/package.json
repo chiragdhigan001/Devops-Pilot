@@ -3,12 +3,16 @@
   "version": "1.0.0",
   "description": "DevOpsPilot AI Backend",
   "main": "server.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "dev": "nodemon server.js",
-    "start": "node server.js"
+    "start": "NODE_ENV=production node server.js",
+    "start:dev": "node server.js"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["devops", "ai", "deployment", "monitoring"],
+  "author": "DevOpsPilot AI",
   "license": "ISC",
   "type": "module",
   "dependencies": {

@@ -1,26 +1,35 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
 export default function OAuthCallback() {
   const navigate = useNavigate();
   const { setUserFromToken } = useAuth();
-  const [error] = useState(() => {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('token') ? '' : 'OAuth authentication failed. No token received.';
-  });
+  const [error, setError] = useState('');
 
-  useEffect(() => {
+  const handleAuth = useCallback(async () => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
     const refreshToken = params.get('refreshToken');
-    if (token) {
-      setUserFromToken(token, refreshToken);
-      navigate('/dashboard');
-    } else if (error) {
-      setTimeout(() => navigate('/login'), 3000);
+
+    if (!token) {
+      setError('OAuth authentication failed. No token received.');
+      setTimeout(() => navigate('/login', { replace: true }), 3000);
+      return;
     }
-  }, [error, navigate, setUserFromToken]);
+
+    try {
+      await setUserFromToken(token, refreshToken);
+      navigate('/dashboard', { replace: true });
+    } catch {
+      setError('OAuth authentication failed.');
+      setTimeout(() => navigate('/login', { replace: true }), 3000);
+    }
+  }, [navigate, setUserFromToken]);
+
+  useEffect(() => {
+    handleAuth();
+  }, [handleAuth]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">

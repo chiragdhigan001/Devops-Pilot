@@ -2,35 +2,47 @@ import Deployment from '../models/Deployment.js';
 import Project from '../models/Project.js';
 
 export const getMetrics = async (req, res) => {
-  const metrics = {
-    cpu: Array.from({ length: 20 }, (_, i) => ({
-      time: new Date(Date.now() - (19 - i) * 5000).toISOString(),
-      value: Math.round((30 + Math.random() * 60) * 100) / 100,
-    })),
-    ram: Array.from({ length: 20 }, (_, i) => ({
-      time: new Date(Date.now() - (19 - i) * 5000).toISOString(),
-      value: Math.round((40 + Math.random() * 50) * 100) / 100,
-      total: 8192,
-    })),
-  };
-  res.json(metrics);
+  try {
+    const metrics = {
+      cpu: Array.from({ length: 20 }, (_, i) => ({
+        time: new Date(Date.now() - (19 - i) * 5000).toISOString(),
+        value: Math.round((30 + Math.random() * 60) * 100) / 100,
+      })),
+      ram: Array.from({ length: 20 }, (_, i) => ({
+        time: new Date(Date.now() - (19 - i) * 5000).toISOString(),
+        value: Math.round((40 + Math.random() * 50) * 100) / 100,
+        total: 8192,
+      })),
+    };
+    res.json(metrics);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 export const getDeploymentHistory = async (req, res) => {
-  const history = Array.from({ length: 10 }, (_, i) => ({
-    date: new Date(Date.now() - i * 86400000).toISOString().split('T')[0],
-    count: Math.floor(Math.random() * 8) + 1,
-    success: Math.floor(Math.random() * 5) + 1,
-    failed: Math.floor(Math.random() * 3),
-  }));
-  res.json(history);
+  try {
+    const history = Array.from({ length: 10 }, (_, i) => ({
+      date: new Date(Date.now() - i * 86400000).toISOString().split('T')[0],
+      count: Math.floor(Math.random() * 8) + 1,
+      success: Math.floor(Math.random() * 5) + 1,
+      failed: Math.floor(Math.random() * 3),
+    }));
+    res.json(history);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 export const getStats = async (req, res) => {
-  const totalDeployments = await Deployment.countDocuments();
-  const activeProjects = await Project.countDocuments({ deploymentStatus: 'running' });
-  const totalProjects = await Project.countDocuments({ ownerId: req.user._id });
-  res.json({ totalDeployments, activeProjects, totalProjects });
+  try {
+    const totalDeployments = await Deployment.countDocuments();
+    const activeProjects = await Project.countDocuments({ deploymentStatus: 'running' });
+    const totalProjects = await Project.countDocuments({ ownerId: req.user._id });
+    res.json({ totalDeployments, activeProjects, totalProjects });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 const LOG_LEVELS = ['INFO', 'WARN', 'DEBUG', 'ERROR'];
@@ -53,26 +65,34 @@ const LOG_MESSAGES = [
 ];
 
 export const getLogs = async (req, res) => {
-  const count = Math.min(parseInt(req.query.count) || 5, 20);
-  const logs = Array.from({ length: count }, () => {
-    const level = LOG_LEVELS[Math.floor(Math.random() * LOG_LEVELS.length)];
-    const message = LOG_MESSAGES[Math.floor(Math.random() * LOG_MESSAGES.length)];
-    const now = new Date();
-    const sec = String(now.getSeconds()).padStart(2, '0');
-    const min = String(now.getMinutes()).padStart(2, '0');
-    const hour = String(now.getHours()).padStart(2, '0');
-    return `[${hour}:${min}:${sec}] ${level}: ${message}`;
-  });
-  res.json(logs);
+  try {
+    const count = Math.min(parseInt(req.query.count) || 5, 20);
+    const logs = Array.from({ length: count }, () => {
+      const level = LOG_LEVELS[Math.floor(Math.random() * LOG_LEVELS.length)];
+      const message = LOG_MESSAGES[Math.floor(Math.random() * LOG_MESSAGES.length)];
+      const now = new Date();
+      const sec = String(now.getSeconds()).padStart(2, '0');
+      const min = String(now.getMinutes()).padStart(2, '0');
+      const hour = String(now.getHours()).padStart(2, '0');
+      return `[${hour}:${min}:${sec}] ${level}: ${message}`;
+    });
+    res.json(logs);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 export const getInsights = async (req, res) => {
-  const now = Date.now();
-  const insights = [
-    { text: 'Auto-scaled service-auth-v2 to 4 instances due to traffic surge.', time: new Date(now - 120000).toISOString(), color: 'bg-primary' },
-    { text: 'Optimized database query performance for prod-db-01. Latency reduced 15%.', time: new Date(now - 900000).toISOString(), color: 'bg-secondary' },
-    { text: 'Blocked unauthorized access attempt from IP 192.168.1.104.', time: new Date(now - 2700000).toISOString(), color: 'bg-error' },
-    { text: 'Weekly maintenance report generated. 0 Critical bugs found.', time: new Date(now - 3600000).toISOString(), color: 'bg-primary' },
-  ];
-  res.json(insights);
+  try {
+    const now = Date.now();
+    const insights = [
+      { text: 'Auto-scaled service-auth-v2 to 4 instances due to traffic surge.', time: new Date(now - 120000).toISOString(), color: 'bg-primary' },
+      { text: 'Optimized database query performance for prod-db-01. Latency reduced 15%.', time: new Date(now - 900000).toISOString(), color: 'bg-secondary' },
+      { text: 'Blocked unauthorized access attempt from IP 192.168.1.104.', time: new Date(now - 2700000).toISOString(), color: 'bg-error' },
+      { text: 'Weekly maintenance report generated. 0 Critical bugs found.', time: new Date(now - 3600000).toISOString(), color: 'bg-primary' },
+    ];
+    res.json(insights);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };

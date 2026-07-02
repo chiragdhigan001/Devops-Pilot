@@ -12,6 +12,7 @@ import AITools from './pages/AITools';
 import LogAnalyzer from './pages/LogAnalyzer';
 import Monitoring from './pages/Monitoring';
 import OAuthCallback from './pages/OAuthCallback';
+import ErrorBoundary from './components/ErrorBoundary';
 
 const AppRoute = ({ children }) => (
   <ProtectedRoute>
@@ -23,6 +24,7 @@ const DeploymentsRedirect = () => <Navigate to="/projects" replace />;
 
 export default function App() {
   return (
+    <ErrorBoundary>
     <BrowserRouter>
       <AuthProvider>
         <Routes>
@@ -40,5 +42,6 @@ export default function App() {
         </Routes>
       </AuthProvider>
     </BrowserRouter>
+    </ErrorBoundary>
   );
 }
