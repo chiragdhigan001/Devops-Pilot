@@ -28,7 +28,11 @@ export default function OAuthCallback() {
   }, [navigate, setUserFromToken]);
 
   useEffect(() => {
-    handleAuth();
+    const timeoutId = setTimeout(() => {
+      void handleAuth();
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
   }, [handleAuth]);
 
   return (

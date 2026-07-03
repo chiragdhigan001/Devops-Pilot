@@ -40,6 +40,7 @@ export default function Monitoring() {
   const [alerts, setAlerts] = useState([]);
   const [error, setError] = useState('');
   const [currentTime, setCurrentTime] = useState(() => Date.now());
+  const [alertTick, setAlertTick] = useState(0);
   const logTail = useRef(null);
   const alertTickRef = useRef(0);
 
@@ -95,6 +96,7 @@ export default function Monitoring() {
         text: template.text,
       }]);
       alertTickRef.current = tick + 1;
+      setAlertTick(tick + 1);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load monitoring data');
     }
@@ -142,7 +144,7 @@ export default function Monitoring() {
   };
 
   return (
-    <motion.div key={alertTickRef.current} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+    <motion.div key={alertTick} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
       <header className="flex justify-between items-center mb-8">
         <div>
           <h2 className="font-headline text-2xl text-primary-fixed tracking-tight">System Monitoring</h2>
@@ -195,7 +197,7 @@ export default function Monitoring() {
           </div>
           <div className="flex-1 overflow-y-auto no-scrollbar p-4 space-y-4">
             {alerts.map((a, i) => (
-              <motion.div key={`${alertTickRef.current}-${i}`} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3 }}
+              <motion.div key={`${alertTick}-${i}`} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3 }}
                 className={`p-4 rounded-xl bg-white/5 border-l-4 ${a.border}`}>
                 <div className="flex justify-between items-start mb-1">
                   <span className={`font-mono text-[10px] uppercase tracking-widest ${a.text}`}>{a.severity}</span>
@@ -206,7 +208,7 @@ export default function Monitoring() {
               </motion.div>
             ))}
             {insights.slice(0, 2).map((ins, i) => (
-              <motion.div key={`ins-${alertTickRef.current}-${i}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              <motion.div key={`ins-${alertTick}-${i}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                 className="p-3 rounded-xl bg-white/[0.02] border border-outline/10">
                 <p className="font-body-sm text-on-surface-variant text-[12px]">{ins.text}</p>
                 <span className="font-mono text-[9px] text-primary-fixed-dim/50 mt-1 block">
