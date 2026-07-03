@@ -22,7 +22,7 @@ WORKDIR /app
 
 # Copy backend source + node_modules
 COPY --from=backend-builder /app/apps/backend ./apps/backend
-COPY --from=backend-builder /app/node_modules ./node_modules 2>/dev/null || true
+COPY --from=backend-builder /app/apps/backend/node_modules ./apps/backend/node_modules
 COPY package.json ./
 
 # Copy frontend build
