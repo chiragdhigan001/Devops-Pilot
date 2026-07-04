@@ -1,37 +1,51 @@
+import si from 'systeminformation';
 import Deployment from '../models/Deployment.js';
 import Project from '../models/Project.js';
 
-export const getMetrics = async (req, res) => {
+let cpuHistory = [];
+let ramHistory = [];
+let networkHistory = { inbound: 0, peak: 10, unit: 'Mbps', status: 'Stable' };
+const HISTORY_LIMIT = 20;
+
+setInterval(async () => {
   try {
-    const metrics = {
-      cpu: Array.from({ length: 20 }, (_, i) => ({
-        time: new Date(Date.now() - (19 - i) * 5000).toISOString(),
-        value: Math.round((30 + Math.random() * 60) * 100) / 100,
-      })),
-      ram: Array.from({ length: 20 }, (_, i) => ({
-        time: new Date(Date.now() - (19 - i) * 5000).toISOString(),
-        value: Math.round((40 + Math.random() * 50) * 100) / 100,
-        total: 8192,
-      })),
-    };
-    res.json(metrics);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+    const time = new Date().toISOString();
+    const cpuLoad = await si.currentLoad();
+    cpuHistory.push({ time, value: Math.round(cpuLoad.currentLoad * 100) / 100 });
+
+    const mem = await si.mem();
+    ramHistory.push({ time, value: Math.round((mem.active / mem.total) * 100 * 100) / 100 });
+
+    const defaultIface = await si.networkInterfaceDefault();
+    const networkStats = await si.networkStats(defaultIface); 
+    
+    if (networkStats && networkStats.length > 0) {
+      const inboundMbps = (networkStats[0].rx_sec * 8) / 1000000;
+      networkHistory.inbound = parseFloat(inboundMbps.toFixed(1));
+      
+      if (networkHistory.inbound > networkHistory.peak) {
+        networkHistory.peak = networkHistory.inbound;
+      }
+      networkHistory.status = networkHistory.inbound > (networkHistory.peak * 0.7) ? 'Heavy Load' : 'Stable';
+    }
+
+    if (cpuHistory.length > HISTORY_LIMIT) cpuHistory.shift();
+    if (ramHistory.length > HISTORY_LIMIT) ramHistory.shift();
+  } catch (err) { console.error(err); }
+}, 3000);
+
+export const getMetrics = async (req, res) => {
+  res.json({ cpu: cpuHistory, ram: ramHistory, network: networkHistory });
 };
 
 export const getDeploymentHistory = async (req, res) => {
   try {
-    const history = Array.from({ length: 10 }, (_, i) => ({
-      date: new Date(Date.now() - i * 86400000).toISOString().split('T')[0],
-      count: Math.floor(Math.random() * 8) + 1,
-      success: Math.floor(Math.random() * 5) + 1,
-      failed: Math.floor(Math.random() * 3),
-    }));
+    const history = await Deployment.aggregate([
+      { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$startedAt" } }, count: { $sum: 1 }, success: { $sum: { $cond: [{ $eq: ["$status", "success"] }, 1, 0] } }, failed: { $sum: { $cond: [{ $eq: ["$status", "failed"] }, 1, 0] } } } },
+      { $sort: { _id: -1 } }, { $limit: 10 }
+    ]);
     res.json(history);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+  } catch (error) { res.status(500).json({ message: error.message }); }
 };
 
 export const getStats = async (req, res) => {
@@ -40,59 +54,17 @@ export const getStats = async (req, res) => {
     const activeProjects = await Project.countDocuments({ deploymentStatus: 'running' });
     const totalProjects = await Project.countDocuments({ ownerId: req.user._id });
     res.json({ totalDeployments, activeProjects, totalProjects });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+  } catch (error) { res.status(500).json({ message: error.message }); }
 };
-
-const LOG_LEVELS = ['INFO', 'WARN', 'DEBUG', 'ERROR'];
-const LOG_MESSAGES = [
-  'Scaling operation started for namespace production',
-  'Created pod worker-v2-xf79 on node aws-us-east-1a-02',
-  'Prometheus scrape successful for endpoint /metrics',
-  'Node k8s-node-04 reporting high memory pressure (89%)',
-  'AI Pilot: Shifting traffic from node-04 to healthy instances',
-  'Load balancer config updated. 0% drop rate.',
-  'Container image pulled: nginx:1.27-alpine',
-  'Health check passed for service api-gateway (200 OK)',
-  'SSL certificate renewed for *.devopspilot.io',
-  'Database connection pool expanded to 25 connections',
-  'Cache hit ratio for redis-cluster: 94.2%',
-  'Pod eviction triggered on node-07 due to disk pressure',
-  'New deployment registered: frontend-v3.2.1',
-  'AI anomaly detection: traffic pattern normal',
-  'Rolling update completed for service-auth-v2',
-];
 
 export const getLogs = async (req, res) => {
   try {
-    const count = Math.min(parseInt(req.query.count) || 5, 20);
-    const logs = Array.from({ length: count }, () => {
-      const level = LOG_LEVELS[Math.floor(Math.random() * LOG_LEVELS.length)];
-      const message = LOG_MESSAGES[Math.floor(Math.random() * LOG_MESSAGES.length)];
-      const now = new Date();
-      const sec = String(now.getSeconds()).padStart(2, '0');
-      const min = String(now.getMinutes()).padStart(2, '0');
-      const hour = String(now.getHours()).padStart(2, '0');
-      return `[${hour}:${min}:${sec}] ${level}: ${message}`;
-    });
-    res.json(logs);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+    const containers = await si.dockerContainers();
+    const logs = containers.map(c => `[${new Date().toLocaleTimeString()}] INFO: Container ${c.name} is tracking state [${c.state}]`);
+    res.json(logs.length > 0 ? logs : [`[${new Date().toLocaleTimeString()}] INFO: Orchestrator idle.`]);
+  } catch (error) { res.status(500).json({ message: error.message }); }
 };
 
 export const getInsights = async (req, res) => {
-  try {
-    const now = Date.now();
-    const insights = [
-      { text: 'Auto-scaled service-auth-v2 to 4 instances due to traffic surge.', time: new Date(now - 120000).toISOString(), color: 'bg-primary' },
-      { text: 'Optimized database query performance for prod-db-01. Latency reduced 15%.', time: new Date(now - 900000).toISOString(), color: 'bg-secondary' },
-      { text: 'Blocked unauthorized access attempt from IP 192.168.1.104.', time: new Date(now - 2700000).toISOString(), color: 'bg-error' },
-      { text: 'Weekly maintenance report generated. 0 Critical bugs found.', time: new Date(now - 3600000).toISOString(), color: 'bg-primary' },
-    ];
-    res.json(insights);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+  res.json([{ text: 'System infrastructure operational.', time: new Date().toISOString(), color: 'bg-primary' }]);
 };

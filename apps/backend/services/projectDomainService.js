@@ -33,21 +33,32 @@ export const isPlatformBaseHost = (hostname) => {
   ].includes(normalizedHost);
 };
 
-export const extractSubdomainFromHost = (hostHeader) => {
-  const hostname = String(hostHeader || '').split(':')[0].toLowerCase();
-  const baseDomain = getBaseDomain().toLowerCase();
+// export const extractSubdomainFromHost = (hostHeader) => {
+//   const hostname = String(hostHeader || '').split(':')[0].toLowerCase();
+//   const baseDomain = getBaseDomain().toLowerCase();
 
-  if (!hostname || isPlatformBaseHost(hostname)) {
-    return null;
+//   if (!hostname || isPlatformBaseHost(hostname)) {
+//     return null;
+//   }
+
+//   const suffix = `.${baseDomain}`;
+//   if (!hostname.endsWith(suffix)) {
+//     return null;
+//   }
+
+//   const subdomain = hostname.slice(0, -suffix.length);
+//   return subdomain || null;
+// };
+
+export const extractSubdomainFromHost = (host) => {
+  if (!host) return null;
+  // Strip the port (e.g., test.lvh.me:5000 -> test.lvh.me)
+  const hostname = host.split(':')[0]; 
+  
+  if (hostname.endsWith('.lvh.me')) {
+    return hostname.replace('.lvh.me', '');
   }
-
-  const suffix = `.${baseDomain}`;
-  if (!hostname.endsWith(suffix)) {
-    return null;
-  }
-
-  const subdomain = hostname.slice(0, -suffix.length);
-  return subdomain || null;
+  return null;
 };
 
 export const generateUniqueSubdomain = async (input, excludeProjectId = null) => {

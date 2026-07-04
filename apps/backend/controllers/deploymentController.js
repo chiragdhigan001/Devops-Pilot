@@ -87,10 +87,13 @@ const executeDeployment = async (deploymentId, projectId, userId, previousDeploy
       onLog: (message) => {
         if (!message) return;
         appendDeploymentLog(deployment, message);
+        // Add this line to stream logs to the UI in real-time
+        emitDeploymentUpdate(project._id, deployment); 
       },
     });
 
     deployment.status = 'deploying';
+    // ... (keep the rest of your success block the same)
     deployment.commitSha = result.commitSha;
     deployment.imageName = result.imageName;
     deployment.containerName = result.containerName;

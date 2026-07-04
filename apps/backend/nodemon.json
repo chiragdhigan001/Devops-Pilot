@@ -1,0 +1,6 @@
+{
+  "ignore": [
+    "tmp/*",
+    "node_modules/*"
+  ]
+}
