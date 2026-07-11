@@ -1,5 +1,6 @@
 import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
+import { getLatestMetrics, getLatestLogs } from '../controllers/monitoringController.js';
 
 let io = null;
 
@@ -20,8 +21,11 @@ export const initSocket = (server) => {
     }
   });
 
-  io.on('connection', (socket) => {
+  io.on('connection', async (socket) => {
     console.log(`User ${socket.userId} connected`);
+    socket.emit('monitoring:metrics', getLatestMetrics());
+    const logs = await getLatestLogs();
+    socket.emit('monitoring:logs', logs);
     socket.on('join:project', (projectId) => {
       socket.join(`project:${projectId}`);
     });

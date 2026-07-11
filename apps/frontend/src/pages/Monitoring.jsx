@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { monitoringAPI } from '../api/client';
+import { io } from 'socket.io-client';
 
 export default function Monitoring() {
   const [metrics, setMetrics] = useState({ cpu: [], ram: [], network: { inbound: 0, peak: 10, unit: 'Mbps', status: 'Stable' } });
@@ -8,21 +8,20 @@ export default function Monitoring() {
   const logTail = useRef(null);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [mRes, lRes] = await Promise.all([monitoringAPI.getMetrics(), monitoringAPI.getLogs(10)]);
-        setMetrics(mRes.data);
-        setLogs(lRes.data);
-      } catch (err) { console.error(err); }
-    };
-    fetchData();
-    const interval = setInterval(fetchData, 3000);
-    return () => clearInterval(interval);
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const socket = io(import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000', {
+      auth: { token },
+    });
+    socket.on('monitoring:metrics', setMetrics);
+    socket.on('monitoring:logs', setLogs);
+    socket.on('connect_error', () => {});
+    return () => { socket.removeAllListeners(); socket.disconnect(); };
   }, []);
 
   const cpu = metrics.cpu[metrics.cpu.length - 1]?.value ?? 0;
   const ram = metrics.ram[metrics.ram.length - 1]?.value ?? 0;
-  const net = metrics.network;
+  const net = metrics.network ?? { inbound: 0, peak: 10, unit: 'Mbps', status: 'Stable' };
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>

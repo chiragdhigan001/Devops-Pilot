@@ -211,7 +211,7 @@ export default function Dashboard() {
                       'bg-white/5 text-on-surface-variant border-white/10'
                     }`}>{p.deploymentStatus.toUpperCase()}</span>
                   </td>
-                  <td className="px-6 py-4 text-on-surface-variant text-xs">{new Date(p.createdAt).toLocaleString()}</td>
+                  <td className="px-6 py-4 text-on-surface-variant text-xs">{new Date(p.createdAt).toLocaleString('en-GB')}</td>
                   <td className="px-6 py-4">
                     <Link to={`/projects/${p._id}`} className="p-2 hover:text-primary transition-colors inline-block">
                       <span className="material-symbols-outlined text-sm">visibility</span>

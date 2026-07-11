@@ -131,7 +131,7 @@ export default function ProjectDetail() {
                   'bg-white/5 text-on-surface-variant border-white/10'
                 }`}>{d.status.toUpperCase()}</span>
               </div>
-              <p className="font-mono text-[10px] text-on-surface-variant">{new Date(d.createdAt).toLocaleString()}</p>
+              <p className="font-mono text-[10px] text-on-surface-variant">{new Date(d.createdAt).toLocaleString('en-GB')}</p>
               {d.deployedUrl && (
                 <a href={d.deployedUrl} target="_blank" rel="noreferrer" className="mt-2 inline-block font-mono text-[10px] text-primary hover:underline">
                   {d.deployedUrl}
