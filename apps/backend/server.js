@@ -143,6 +143,7 @@ app.get("/test", (req, res) => {
 });
 
 // API routes
+console.log("authRoutes =", authRoutes);
 app.use('/api/auth', authRoutes);
 console.log("✅ Auth routes loaded");
 
