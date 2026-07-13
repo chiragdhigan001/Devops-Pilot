@@ -134,6 +134,12 @@ passport.use(
   )
 );
 
+app.get("/test", (req, res) => {
+  res.json({
+    message: "Server is working"
+  });
+});
+
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
