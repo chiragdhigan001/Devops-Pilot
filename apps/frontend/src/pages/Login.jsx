@@ -21,6 +21,8 @@ export default function Login() {
   };
 
   const API_URL = import.meta.env.VITE_API_URL;
+  console.log("API_URL =", API_URL);
+console.log("ENV =", import.meta.env);
   
   return (
     <div className="min-h-screen flex items-center justify-center px-4 bg-background">
