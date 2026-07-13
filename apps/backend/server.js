@@ -29,7 +29,6 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const server = createServer(app);
 
-// Security
 app.use(
   helmet({
     contentSecurityPolicy:
@@ -59,13 +58,16 @@ app.use(
 if (process.env.NODE_ENV === 'production') {
   const logDir = path.join(__dirname, '..', 'logs');
   await fs.mkdir(logDir, { recursive: true }).catch(() => {});
-  const logStream = await fs.open(path.join(logDir, 'access.log'), 'a');
+
+  const accessLogPath = path.join(logDir, 'access.log');
+  const accessLogHandle = await fs.open(accessLogPath, 'a');
+
   app.use(
     morgan('combined', {
       stream: {
         write: async (message) => {
           try {
-            await logStream.appendFile(message);
+            await accessLogHandle.appendFile(message);
           } catch (err) {
             console.error('Failed to write log:', err);
           }
@@ -82,7 +84,6 @@ app.use(express.json({ limit: '10mb' }));
 app.use(apiLimiter);
 client.collectDefaultMetrics();
 
-// Passport OAuth strategies
 passport.use(
   new GoogleStrategy(
     {
@@ -93,6 +94,7 @@ passport.use(
     async (accessToken, refreshToken, profile, done) => {
       try {
         let user = await User.findOne({ oauthId: profile.id, oauthProvider: 'google' });
+
         if (!user) {
           user = await User.create({
             name: profile.displayName,
@@ -102,6 +104,7 @@ passport.use(
             oauthId: profile.id,
           });
         }
+
         done(null, user);
       } catch (err) {
         done(err, null);
@@ -162,23 +165,6 @@ app.get('/metrics', async (req, res) => {
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
-
-// Serve frontend in production
-if (process.env.NODE_ENV === 'production') {
-  const frontendDist = path.join(__dirname, '..', 'frontend', 'dist');
-  app.use(express.static(frontendDist));
-
-  app.get('*', (req, res, next) => {
-    if (
-      req.path.startsWith('/api/') ||
-      req.path.startsWith('/socket.io') ||
-      req.path === '/metrics'
-    ) {
-      return next();
-    }
-    res.sendFile(path.join(frontendDist, 'index.html'));
-  });
-}
 
 // Error handler
 app.use((err, req, res, next) => {
