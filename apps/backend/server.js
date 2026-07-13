@@ -142,6 +142,8 @@ app.get("/test", (req, res) => {
 
 // API routes
 app.use('/api/auth', authRoutes);
+console.log("✅ Auth routes loaded");
+
 app.use('/api/projects', projectRoutes);
 app.use('/api/deployments', deploymentRoutes);
 app.use('/api/ai', aiRoutes);
