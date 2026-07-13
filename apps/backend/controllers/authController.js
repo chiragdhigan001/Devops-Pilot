@@ -76,12 +76,21 @@ export const getMe = async (req, res) => {
 };
 
 export const oauthCallback = async (req, res) => {
+  console.log("===== OAuth Callback Reached =====");
+
+  if (!req.user) {
+    console.error("req.user is undefined");
+    return res.status(401).json({ message: "OAuth authentication failed" });
+  }
+
+  console.log("Authenticated user:", req.user.email);
+
   const tokens = generateTokens(req.user._id);
 
   const redirectUrl =
     `${process.env.FRONTEND_URL}/oauth/callback?token=${tokens.token}&refreshToken=${tokens.refreshToken}`;
 
-  console.log("OAuth redirect:", redirectUrl);
+  console.log("Redirect URL:", redirectUrl);
 
   res.redirect(redirectUrl);
 };
