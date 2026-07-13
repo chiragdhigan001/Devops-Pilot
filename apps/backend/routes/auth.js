@@ -1,16 +1,42 @@
 import { Router } from 'express';
 import passport from 'passport';
-import { register, login, refresh, getMe, oauthCallback } from '../controllers/authController.js';
+import {
+  register,
+  login,
+  refresh,
+  getMe,
+  oauthCallback,
+} from '../controllers/authController.js';
 import { protect } from '../middleware/auth.js';
 import { authLimiter } from '../middleware/rateLimiter.js';
 
 const router = Router();
 
+console.log('✅ auth.js loaded');
+
+// Test route
+router.get('/check', (req, res) => {
+  res.send('Auth routes working');
+});
+
+// Normal auth
 router.post('/register', authLimiter, register);
 router.post('/login', authLimiter, login);
 router.post('/refresh', refresh);
 router.get('/me', protect, getMe);
 
+// ---------------- GOOGLE ----------------
+
+// Start Google OAuth
+router.get(
+  '/google',
+  passport.authenticate('google', {
+    scope: ['profile', 'email'],
+    session: false,
+  })
+);
+
+// Google callback
 router.get('/google/callback', (req, res, next) => {
   passport.authenticate(
     'google',
@@ -41,7 +67,20 @@ router.get('/google/callback', (req, res, next) => {
   )(req, res, next);
 });
 
-router.get('/github', passport.authenticate('github', { scope: ['user:email'] }));
-router.get('/github/callback', passport.authenticate('github', { session: false }), oauthCallback);
+// ---------------- GITHUB ----------------
+
+router.get(
+  '/github',
+  passport.authenticate('github', {
+    scope: ['user:email'],
+    session: false,
+  })
+);
+
+router.get(
+  '/github/callback',
+  passport.authenticate('github', { session: false }),
+  oauthCallback
+);
 
 export default router;
