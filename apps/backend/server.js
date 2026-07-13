@@ -1,15 +1,12 @@
 import 'dotenv/config';
 import express from 'express';
 import { createServer } from 'http';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as GitHubStrategy } from 'passport-github2';
-import fs from 'fs/promises';
 import connectDB from './config/db.js';
 import { connectRedis } from './config/redis.js';
 import { initSocket } from './socket/index.js';
@@ -23,61 +20,38 @@ import aiRoutes from './routes/ai.js';
 import monitoringRoutes from './routes/monitoring.js';
 import client from 'prom-client';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 const app = express();
 const server = createServer(app);
 
+const isProduction = process.env.NODE_ENV === 'production';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5000';
+
 app.use(
   helmet({
-    contentSecurityPolicy:
-      process.env.NODE_ENV === 'production'
-        ? {
-            directives: {
-              defaultSrc: ["'self'"],
-              scriptSrc: ["'self'", "'unsafe-inline'"],
-              styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
-              fontSrc: ["'self'", 'https://fonts.gstatic.com'],
-              imgSrc: ["'self'", 'data:', 'https:'],
-              connectSrc: ["'self'", process.env.FRONTEND_URL].filter(Boolean),
-            },
-          }
-        : false,
+    contentSecurityPolicy: isProduction
+      ? {
+          directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'"],
+            styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+            fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+            imgSrc: ["'self'", 'data:', 'https:'],
+            connectSrc: ["'self'", FRONTEND_URL, BACKEND_URL].filter(Boolean),
+          },
+        }
+      : false,
   })
 );
 
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: FRONTEND_URL,
     credentials: true,
   })
 );
 
-// Logging
-if (process.env.NODE_ENV === 'production') {
-  const logDir = path.join(__dirname, '..', 'logs');
-  await fs.mkdir(logDir, { recursive: true }).catch(() => {});
-
-  const accessLogPath = path.join(logDir, 'access.log');
-  const accessLogHandle = await fs.open(accessLogPath, 'a');
-
-  app.use(
-    morgan('combined', {
-      stream: {
-        write: async (message) => {
-          try {
-            await accessLogHandle.appendFile(message);
-          } catch (err) {
-            console.error('Failed to write log:', err);
-          }
-        },
-      },
-    })
-  );
-} else {
-  app.use(morgan('dev'));
-}
+app.use(isProduction ? morgan('combined') : morgan('dev'));
 
 app.use(subdomainProxy);
 app.use(express.json({ limit: '10mb' }));
@@ -89,11 +63,16 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: '/api/auth/google/callback',
+      callbackURL: isProduction
+        ? 'https://devops-pilot.onrender.com/api/auth/google/callback'
+        : 'http://localhost:5000/api/auth/google/callback',
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
-        let user = await User.findOne({ oauthId: profile.id, oauthProvider: 'google' });
+        let user = await User.findOne({
+          oauthId: profile.id,
+          oauthProvider: 'google',
+        });
 
         if (!user) {
           user = await User.create({
@@ -105,9 +84,9 @@ passport.use(
           });
         }
 
-        done(null, user);
+        return done(null, user);
       } catch (err) {
-        done(err, null);
+        return done(err, null);
       }
     }
   )
@@ -118,15 +97,22 @@ passport.use(
     {
       clientID: process.env.GITHUB_CLIENT_ID,
       clientSecret: process.env.GITHUB_CLIENT_SECRET,
-      callbackURL: '/api/auth/github/callback',
+      callbackURL: isProduction
+        ? 'https://devops-pilot.onrender.com/api/auth/github/callback'
+        : 'http://localhost:5000/api/auth/github/callback',
       scope: ['user:email'],
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
-        let user = await User.findOne({ oauthId: profile.id, oauthProvider: 'github' });
+        let user = await User.findOne({
+          oauthId: profile.id,
+          oauthProvider: 'github',
+        });
 
         if (!user) {
-          const email = profile.emails?.[0]?.value || `${profile.username}@github.local`;
+          const email =
+            profile.emails?.[0]?.value || `${profile.username}@github.local`;
+
           user = await User.create({
             name: profile.displayName || profile.username,
             email,
@@ -140,9 +126,9 @@ passport.use(
           await user.save();
         }
 
-        done(null, user);
+        return done(null, user);
       } catch (err) {
-        done(err, null);
+        return done(err, null);
       }
     }
   )
@@ -155,7 +141,7 @@ app.use('/api/deployments', deploymentRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/monitoring', monitoringRoutes);
 
-// Prometheus metrics
+// Metrics
 app.get('/metrics', async (req, res) => {
   res.set('Content-Type', client.register.contentType);
   res.end(await client.register.metrics());
@@ -176,10 +162,12 @@ const PORT = process.env.PORT || 5000;
 
 const start = async () => {
   await connectDB();
-  await connectRedis().catch(() => console.warn('Redis unavailable, continuing without cache'));
+  await connectRedis().catch(() =>
+    console.warn('Redis unavailable, continuing without cache')
+  );
   initSocket(server);
 
-  server.listen(PORT, () => {
+  server.listen(PORT, '0.0.0.0', () => {
     console.log(
       `DevOpsPilot AI backend running on port ${PORT} [${process.env.NODE_ENV || 'development'}]`
     );
