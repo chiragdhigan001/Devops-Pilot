@@ -56,6 +56,7 @@ app.use(isProduction ? morgan('combined') : morgan('dev'));
 
 app.use(subdomainProxy);
 app.use(express.json({ limit: '10mb' }));
+app.use(passport.initialize());
 app.use(apiLimiter);
 client.collectDefaultMetrics();
 
