@@ -3,22 +3,42 @@ import Project from '../models/Project.js';
 import Deployment from '../models/Deployment.js';
 import { extractSubdomainFromHost } from '../services/projectDomainService.js';
 
-// Create the proxy server instance once
+// Create proxy only once
 const proxy = httpProxy.createProxyServer({
-  ws: true, // Crucial: Enables WebSockets for React/Vite apps
-  xfwd: true, // Automatically adds x-forwarded-for/host headers
+  ws: true,
+  xfwd: true,
 });
 
 export const subdomainProxy = async (req, res, next) => {
   const host = req.headers.host || '';
-  
-  // 1. Bypass proxy for main dashboard (localhost)
-  if (host.startsWith('localhost') || host.startsWith('127.0.0.1')) {
+
+  // ============================
+  // Skip proxy for API routes
+  // ============================
+  if (
+    req.path.startsWith('/api') ||
+    req.path.startsWith('/metrics') ||
+    req.path.startsWith('/test')
+  ) {
     return next();
   }
 
-  // 2. Extract subdomain (ensure your extraction logic handles ports like test.lvh.me:5000)
+  // ============================
+  // Skip proxy for main app
+  // ============================
+  if (
+    host.startsWith('localhost') ||
+    host.startsWith('127.0.0.1') ||
+    host === 'devops-pilot.onrender.com'
+  ) {
+    return next();
+  }
+
+  // ============================
+  // Get subdomain
+  // ============================
   const subdomain = extractSubdomainFromHost(host);
+
   if (!subdomain) {
     return next();
   }
@@ -30,28 +50,48 @@ export const subdomainProxy = async (req, res, next) => {
       activeDeploymentId: { $ne: null },
     }).select('activeDeploymentId name');
 
-    if (!project?.activeDeploymentId) {
-      return res.status(404).send(`No active deployment found for subdomain ${subdomain}`);
+    if (!project) {
+      return res
+        .status(404)
+        .send(`No project found for subdomain "${subdomain}"`);
     }
 
-    const deployment = await Deployment.findById(project.activeDeploymentId).select('hostPort status');
-    
-    if (!deployment?.hostPort || deployment.status !== 'success') {
-      return res.status(503).send(`Deployment for ${subdomain} is not ready yet`);
+    const deployment = await Deployment.findById(
+      project.activeDeploymentId
+    ).select('hostPort status');
+
+    if (!deployment) {
+      return res.status(404).send('Deployment not found.');
     }
 
-    // 3. Proxy the request to the running Docker container
+    if (deployment.status !== 'success') {
+      return res.status(503).send('Deployment is not ready yet.');
+    }
+
+    if (!deployment.hostPort) {
+      return res.status(503).send('Deployment port not available.');
+    }
+
     const target = `http://127.0.0.1:${deployment.hostPort}`;
-    
+
+    console.log(`[Proxy] ${host} -> ${target}`);
+
     proxy.web(req, res, { target }, (err) => {
-      console.error(`[PROXY ERROR] Failed to route to ${subdomain}:`, err.message);
+      console.error('[PROXY ERROR]', err);
+
       if (!res.headersSent) {
-        res.status(502).send('Bad Gateway: Container might be down or restarting.');
+        res.status(502).send('Bad Gateway');
       }
     });
-
-  } catch (error) {
-    console.error('[PROXY DATABASE ERROR]', error);
-    next(error);
+  } catch (err) {
+    console.error('[SUBDOMAIN PROXY ERROR]', err);
+    next(err);
   }
 };
+
+// WebSocket support
+proxy.on('error', (err) => {
+  console.error('[PROXY WS ERROR]', err);
+});
+
+export default subdomainProxy;

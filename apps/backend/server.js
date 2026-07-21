@@ -22,6 +22,7 @@ import client from 'prom-client';
 
 const app = express();
 const server = createServer(app);
+app.set('trust proxy', 1);
 
 const isProduction = process.env.NODE_ENV === 'production';
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
@@ -55,6 +56,7 @@ app.use(isProduction ? morgan('combined') : morgan('dev'));
 
 app.use(subdomainProxy);
 app.use(express.json({ limit: '10mb' }));
+app.use(passport.initialize());
 app.use(apiLimiter);
 client.collectDefaultMetrics();
 
@@ -134,8 +136,17 @@ passport.use(
   )
 );
 
+app.get("/test", (req, res) => {
+  res.json({
+    message: "Server is working"
+  });
+});
+
 // API routes
+console.log("authRoutes =", authRoutes);
 app.use('/api/auth', authRoutes);
+console.log("✅ Auth routes loaded");
+
 app.use('/api/projects', projectRoutes);
 app.use('/api/deployments', deploymentRoutes);
 app.use('/api/ai', aiRoutes);
